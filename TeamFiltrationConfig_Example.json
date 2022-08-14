@@ -1,0 +1,12 @@
+{
+    "pushoverAppKey": "apwxxxxxxxxxxxxxxxxxxxxxxxxj", 
+    "pushoverUserKey": "u3oxxxxxxxxxxxxxxxxxxxxxxxxaqr", 
+    "msolFireProxEndpointsUs": ["https://foobar1.execute-api.us-east-1.amazonaws.com/fireprox/common/oauth2/token","https://foobar2.execute-api.us-west-1.amazonaws.com/fireprox/common/oauth2/token","https://foobar3.execute-api.us-west-2.amazonaws.com/fireprox/common/oauth2/token","https://foobar4.execute-api.ca-central-1.amazonaws.com/fireprox/common/oauth2/token","https://foobar5.execute-api.eu-central-1.amazonaws.com/fireprox/common/oauth2/token"],
+    "msolFireProxEndpoints": ["https://faabar1.execute-api.us-west-1.amazonaws.com/fireprox/common/oauth2/token","https://faabar2.execute-api.us-east-1.amazonaws.com/fireprox/common/oauth2/token","https://faabar3.execute-api.eu-west-3.amazonaws.com/fireprox/common/oauth2/token","https://faabar4.execute-api.ca-central-1.amazonaws.com/fireprox/common/oauth2/token","https://faabar5.execute-api.us-west-2.amazonaws.com/fireprox/common/oauth2/token"],
+    "teamsEnumFireProxEndpoints": ["https://feebar1.execute-api.us-east-1.amazonaws.com/fireprox/","https://feebar2.execute-api.us-west-1.amazonaws.com/fireprox/","https://feebar2.execute-api.us-west-2.amazonaws.com/fireprox/","https://feebar3.execute-api.ca-central-1.amazonaws.com/fireprox/","https://feebar4.execute-api.eu-central-1.amazonaws.com/fireprox/","https://feebar5.execute-api.eu-west-1.amazonaws.com/fireprox/"],
+    "aadSSoFireProxEndpoints": ["https://fiibar1.execute-api.us-east-1.amazonaws.com/fireprox","https://fiibar2.execute-api.us-west-1.amazonaws.com/fireprox","https://fiibar2.execute-api.us-west-2.amazonaws.com/fireprox","https://fiibar3.execute-api.ca-central-1.amazonaws.com/fireprox","https://fiibar4.execute-api.eu-central-1.amazonaws.com/fireprox","https://fiibar5.execute-api.eu-west-1.amazonaws.com/fireprox"],
+    "dehashedApiKey": "", 
+    "sacrificialO365Username": "sacrificial@domain.org", 
+    "sacrificialO365Passwords": "MySacrificialPassword123!" ,  
+    "proxyEndpoint": "http://127.0.0.1:8080" 
+  }
