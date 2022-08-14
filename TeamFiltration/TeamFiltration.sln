@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30717.126
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TeamFiltration", "TeamFiltration\TeamFiltration.csproj", "{EF143476-E53D-4C39-8DBB-A6AC7883236C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "API", "OneDriveAPI\API.csproj", "{A0F044C5-D910-4720-B082-58824E372281}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EF143476-E53D-4C39-8DBB-A6AC7883236C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EF143476-E53D-4C39-8DBB-A6AC7883236C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EF143476-E53D-4C39-8DBB-A6AC7883236C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EF143476-E53D-4C39-8DBB-A6AC7883236C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A0F044C5-D910-4720-B082-58824E372281}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A0F044C5-D910-4720-B082-58824E372281}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A0F044C5-D910-4720-B082-58824E372281}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A0F044C5-D910-4720-B082-58824E372281}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {EBE502C5-C2BE-458B-BBD7-178151B62453}
+	EndGlobalSection
+EndGlobal
