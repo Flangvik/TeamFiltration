@@ -15,10 +15,11 @@ You will need to provide a json config file to be able to use TeamFiltration. Th
 
 - You cannot run multiple instances of TeamFiltration with the same --outpath, this will cause a LiteDB file write collision!
 - --outpath is mandatory and needs to be supplied for each module
-- --outpath is Client specific across all modules
+- --outpath is client specific across all modules
 - --outpath IS A FOLDER PATH, not a file.
 - Question or bug? Hit me up on Twitter or create an issue
 - For pushover to work, you need to specify both --pushover when starting a password spray
+- In order to use the --validate-teams enumeration method you need to provide sacrificial Office 365 user account (sacrificialO365Username and sacrificialO365Password in the config file)
 ## Usage
 
 ```
@@ -307,7 +308,7 @@ Create the following bash script inside the folder!
 array=( us-east-1 us-west-1 us-west-2 ca-central-1 eu-central-1 eu-west-1 eu-west-2 eu-west-3 eu-north-1 )
 
 #Endpoint to be proxied
-$url = "https://login.microsoftonline.com/"
+$url="https://login.microsoftonline.com/"
 
 #Switch out to generate with these
 #url="https://login.microsoftonline.us/"
@@ -320,3 +321,12 @@ do
 done
 
 ```
+
+Run the bash script multiple times in order to generate url's for the **FireProxEndpoints properties in the JSON config file.
+
+## Credits
+
+- [GitHub - KoenZomers/OneDriveAPI: API in .NET to communicate with OneDrive Personal and OneDrive for Business](https://github.com/KoenZomers/OneDriveAPI)
+- [Research into Undocumented Behavior of Azure AD Refresh Tokens ](https://github.com/secureworks/family-of-client-ids-research) 
+- Credits to [Ryan] (https://twitter.com/detectdotdev] for validating and discussing my observations / questions!
+- The entire [TrustedSec](https://TrustedSec.com) team for helping me polish this tool! 
