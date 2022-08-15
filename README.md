@@ -1,5 +1,5 @@
 ﻿## TeamFiltration 
-TeamFiltration is a cross-platform framework for enumerating, spraying, exfiltration and backdooring O365 AAD accounts.
+TeamFiltration is a cross-platform framework for enumerating, spraying, exfiltrating, and backdooring O365 AAD accounts.
 **See the [Example Attack flow](#example-attack-flow) at the bottom of this readme for a general introduction into how TeamFiltration works!**
 
 This tool has been used internally since January 2021 and was publicly released in my talk "Taking a Dumb In The Cloud" during DefCON30.
