@@ -308,7 +308,7 @@ Create the following bash script inside the folder!
 array=( us-east-1 us-west-1 us-west-2 ca-central-1 eu-central-1 eu-west-1 eu-west-2 eu-west-3 eu-north-1 )
 
 #Endpoint to be proxied
-$url="https://login.microsoftonline.com/"
+url="https://login.microsoftonline.com/"
 
 #Switch out to generate with these
 #url="https://login.microsoftonline.us/"
