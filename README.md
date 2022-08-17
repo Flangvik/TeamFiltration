@@ -323,19 +323,19 @@ declare -a aadSSoFireProxEndpoints
 #generate them all
 for i in "${regionsArray[@]}"
 do 
-	newMsolEndpoint=$( python3 fire.py --access_key <AWS-ACCESS-KEY> --secret_access_key  <AWS-SECRET-KEY> --region $i --command create --url $msolEndpoint | grep -iPo "https?:\/\/(www\.)?[-a-zA-Z0-9]{10}.*\.amazonaws\.com\/fireprox\/" )
-    msolFireProxEndpoints=("${msolFireProxEndpoints[@]}" "\"$newMsolEndpoint\"")
+	newMsolEndpoint=$( python3 fire.py --access_key AWS-ACCESS-KEY --secret_access_key <AWS-SECRET-KEY> --region $i --command create --url $msolEndpoint | grep -iPo "https?:\/\/(www\.)?[-a-zA-Z0-9]{10}.*\.amazonaws\.com\/fireprox\/" )
+    msolFireProxEndpoints=("${msolFireProxEndpoints[@]}" "\"$newMsolEndpoint""common/oauth2/token\"")
 	echo "[+] Created $newMsolEndpoint that points to $msolEndpoint"
 
-	newMsolEndpointUs=$(python3 fire.py --access_key <AWS-ACCESS-KEY> --secret_access_key  <AWS-SECRET-KEY> --region $i --command create --url $msolEndpointUs | grep -iPo "https?:\/\/(www\.)?[-a-zA-Z0-9]{10}.*\.amazonaws\.com\/fireprox\/" )
-	msolFireProxEndpointsUs=("${msolFireProxEndpointsUs[@]}" "\"$newMsolEndpointUs\"")
+	newMsolEndpointUs=$(python3 fire.py --access_key AWS-ACCESS-KEY --secret_access_key <AWS-SECRET-KEY> --region $i --command create --url $msolEndpointUs | grep -iPo "https?:\/\/(www\.)?[-a-zA-Z0-9]{10}.*\.amazonaws\.com\/fireprox\/" )
+	msolFireProxEndpointsUs=("${msolFireProxEndpointsUs[@]}" "\"$newMsolEndpointUs"."common/oauth2/token\"")
 	echo "[+] Created $newMsolEndpointUs that points to $msolEndpointUs"
 
-	newTeamsEnumEndpoint=$(python3 fire.py --access_key <AWS-ACCESS-KEY> --secret_access_key  <AWS-SECRET-KEY> --region $i --command create --url $teamsEnumEndpoint | grep -iPo "https?:\/\/(www\.)?[-a-zA-Z0-9]{10}.*\.amazonaws\.com\/fireprox\/" )
+	newTeamsEnumEndpoint=$(python3 fire.py --access_key AWS-ACCESS-KEY --secret_access_key <AWS-SECRET-KEY> --region $i --command create --url $teamsEnumEndpoint | grep -iPo "https?:\/\/(www\.)?[-a-zA-Z0-9]{10}.*\.amazonaws\.com\/fireprox\/" )
 	teamsEnumFireProxEndpoints=("${teamsEnumFireProxEndpoints[@]}" "\"$newTeamsEnumEndpoint\"")
 	echo "[+] Created $newTeamsEnumEndpoint that points to $teamsEnumEndpoint"
 
-	newAadSSoEndpoint=$(python3 fire.py --access_key <AWS-ACCESS-KEY> --secret_access_key  <AWS-SECRET-KEY> --region $i --command create --url $aadSSoEndpoint | grep -iPo "https?:\/\/(www\.)?[-a-zA-Z0-9]{10}.*\.amazonaws\.com\/fireprox\/" )
+	newAadSSoEndpoint=$(python3 fire.py --access_key AWS-ACCESS-KEY --secret_access_key <AWS-SECRET-KEY> --region $i --command create --url $aadSSoEndpoint | grep -iPo "https?:\/\/(www\.)?[-a-zA-Z0-9]{10}.*\.amazonaws\.com\/fireprox\/" )
 	aadSSoFireProxEndpoints=("${aadSSoFireProxEndpoints[@]}" "\"$newAadSSoEndpoint\"")
 	echo "[+] Created $newAadSSoEndpoint that points to $aadSSoEndpoint"
 
@@ -345,17 +345,16 @@ done
 	echo ""
 
 	msolFireProxEndpointsJsonArray=$(join_by , ${msolFireProxEndpoints[@]})
-	echo "\"msolFireProxEndpoints\":[$msolFireProxEndpointsJsonArray],"
+	echo "\"msolFireProxEndpoints\": [$msolFireProxEndpointsJsonArray],"
 
 	msolFireProxEndpointsUsJsonArray=$(join_by , ${msolFireProxEndpointsUs[@]})
-	echo "\"msolFireProxEndpointsUs\":[$msolFireProxEndpointsUsJsonArray],"
+	echo "\"msolFireProxEndpointsUs\": [$msolFireProxEndpointsUsJsonArray],"
 
 	teamsEnumFireProxEndpointsJsonArray=$(join_by , ${teamsEnumFireProxEndpoints[@]})
-	echo "\"teamsEnumFireProxEndpoints\":[$teamsEnumFireProxEndpointsJsonArray],"
+	echo "\"teamsEnumFireProxEndpoints\": [$teamsEnumFireProxEndpointsJsonArray],"
 
 	aadSSoFireProxEndpointsJsonArray=$(join_by , ${aadSSoFireProxEndpoints[@]})
-	echo "\"aadSSoFireProxEndpoints\":[$aadSSoFireProxEndpointsJsonArray],"
-
+	echo "\"aadSSoFireProxEndpoints\": [$aadSSoFireProxEndpointsJsonArray],"
 
 ```
 
