@@ -365,7 +365,7 @@ Fill in our AWS access keys and run the script, the bash script will output the 
 
 - [GitHub - KoenZomers/OneDriveAPI: API in .NET to communicate with OneDrive Personal and OneDrive for Business](https://github.com/KoenZomers/OneDriveAPI)
 - [Research into Undocumented Behavior of Azure AD Refresh Tokens ](https://github.com/secureworks/family-of-client-ids-research) 
-- (WS API Gateway management tool for creating on the fly HTTP pass-through proxies for unique IP rotation](https://github.com/ustayready/fireprox)
+- [WS API Gateway management tool for creating on the fly HTTP pass-through proxies for unique IP rotation](https://github.com/ustayready/fireprox)
 - Credits to [Ryan] (https://twitter.com/detectdotdev) for validating and discussing my observations / questions!
 - The entire [TrustedSec](https://TrustedSec.com) team for helping me polish this tool! 
 
