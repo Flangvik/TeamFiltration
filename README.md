@@ -18,8 +18,7 @@ You will need to provide a json config file to be able to use TeamFiltration. Th
 - --outpath is client specific across all modules
 - --outpath IS A FOLDER PATH, not a file.
 - Question or bug? Hit me up on Twitter or create an issue
-- For pushover to work, you need to specify both --pushover when starting a password spray
-- In order to use the --validate-teams enumeration method you need to provide sacrificial Office 365 user account (sacrificialO365Username and sacrificialO365Password in the config file)
+- In order to use the --validate-teams enumeration method you need to provide a sacrificial Office 365 user account (sacrificialO365Username and sacrificialO365Password in the config file)
 ## Usage
 
 ```
