@@ -119,8 +119,6 @@ Usage:
         --outpath C:\Clients\2021\FooBar\TFOutput --config myCustomConfig.json --enum --validate-msol --usernames C:\Clients\2021\FooBar\OSINT\Usernames.txt
         --outpath C:\Clients\2021\FooBar\TFOutput --config myCustomConfig.json --backdoor
         --outpath C:\Clients\2021\FooBar\TFOutput --config myCustomConfig.json --database
-
-
 ```
 
 ## Example Attack Flow
