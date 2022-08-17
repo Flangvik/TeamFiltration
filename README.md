@@ -268,7 +268,7 @@ Below is an example TeamFiltration config file, the configuration file needs to 
   An string array of fireprox endpoints generated to be pointing at -> `https://teams.microsoft.com/api/mt/`
 
   `aadSSoFireProxEndpoints`
-  An string array of fireprox endpoints generated to be pointing at -> `TO BE UPDATED UPDATE` (Optional).
+  An string array of fireprox endpoints generated to be pointing at -> `https://autologon.microsoftazuread-sso.com/` (Optional).
 
   `sacrificialO365Username`
  The username / email for the sacrificial Office365 account used for perfoming enumeration using the Teams API method. (Optional, but cannot have MFA / Conditional access enabled, dohh)
