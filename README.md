@@ -18,7 +18,7 @@ You will need to provide a json config file to be able to use TeamFiltration. Th
 - --outpath is client specific across all modules
 - --outpath IS A FOLDER PATH, not a file.
 - Question or bug? Hit me up on Twitter or create an issue
-- In order to use the --validate-teams enumeration method you need to provide a sacrificial Office 365 user account (sacrificialO365Username and sacrificialO365Password in the config file)
+- In order to use the --validate-teams enumeration method you need to provide a sacrificial Office 365 user account. This account cannot have MFA enforced and must be joined in AAD with an valid Basic license. (sacrificialO365Username and sacrificialO365Password in the config file)
 ## Usage
 
 ```
