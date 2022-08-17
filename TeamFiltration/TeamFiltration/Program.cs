@@ -18,7 +18,7 @@ namespace TeamFiltration
         {
             Console.WriteLine("Usage:\n");
             Console.WriteLine("   --outpath     Output path to store database and exfiltrated information (Needed for all modules)\n");
-            Console.WriteLine("   --config      Local path to your TeamFiltration.json configuration file, if not provided will load from current path\n");
+            Console.WriteLine("   --config      Local path to your TeamFiltration.json configuration file, if not provided will load from the current path\n");
             Console.WriteLine("   --exfil       Load the exfiltration module  \n");
             Console.WriteLine("         --username            Override to target a given username that does not exist in the database");
             Console.WriteLine("         --password            Override to target a given password that does not exist in the database");
@@ -40,13 +40,12 @@ namespace TeamFiltration
             Console.WriteLine("         --months-only         Password generated for spraying will only be based on months");
             Console.WriteLine("         --common-only         Spray with the top 20 most common passwords");
             Console.WriteLine("         --combo               Path to a combolist of username:password");
-            Console.WriteLine("         --exlude              Path to a list of emails to exclude from spraying\n");
+            Console.WriteLine("         --exclude              Path to a list of emails to exclude from spraying\n");
             Console.WriteLine("         --sleep-min           Minimum minutes to sleep between each full rotation of spraying default=60");
             Console.WriteLine("         --sleep-max           Maximum minutes to sleep between each full rotation of spraying default=100");
             Console.WriteLine("         --delay               Delay in seconds between each individual authentication attempt. default=0");
-            Console.WriteLine("         --push-userkey        Pushover user API key for notifications when credentials are found)");
-            Console.WriteLine("         --push-appkey         Pushover app API key for notifications when credentials are found)");
-            Console.WriteLine("         --push-locked         Get Pushover notifications when an sprayed account gets locked (requires --push-userkey and --push-appkey)");
+            Console.WriteLine("         --push                Get Pushover notifications when valid credentials are found (requires pushover keys in config)");
+            Console.WriteLine("         --push-locked         Get Pushover notifications when an sprayed account gets locked (requires pushover keys in config)");
             Console.WriteLine("         --force               Force the spraying to proceed even if there is less the <sleep> time since the last attempt\n");
 
             Console.WriteLine("   --enum        Load the enumeration module\n");
@@ -62,8 +61,8 @@ namespace TeamFiltration
             Console.WriteLine("   --debug           Add burp as a proxy on 127.0.0.1:8080\n");
 
             Console.WriteLine("   Examples:\n");
-            Console.WriteLine(@"        --outpath C:\Clients\2021\FooBar\TFOutput --config myCustomConfig.json --spray --sleep-min 120 --sleep-max 200 --push-userkey XXX --push-appkey XXX");
-            Console.WriteLine(@"        --outpath C:\Clients\2021\FooBar\TFOutput --config myCustomConfig.json --spray --push-userkey XXX --push-appkey XXX --push-locked --months-only --exlude C:\Clients\2021\FooBar\Exclude_Emails.txt");
+            Console.WriteLine(@"        --outpath C:\Clients\2021\FooBar\TFOutput --config myCustomConfig.json --spray --sleep-min 120 --sleep-max 200 --push");
+            Console.WriteLine(@"        --outpath C:\Clients\2021\FooBar\TFOutput --config myCustomConfig.json --spray --push-locked --months-only --exclude C:\Clients\2021\FooBar\Exclude_Emails.txt");
             Console.WriteLine(@"        --outpath C:\Clients\2021\FooBar\TFOutput --config myCustomConfig.json --spray --passwords C:\Clients\2021\FooBar\Generic\Passwords.txt --time-window 13:00-22:00");
             Console.WriteLine(@"        --outpath C:\Clients\2021\FooBar\TFOutput --config myCustomConfig.json --exfil --all ");
             Console.WriteLine(@"        --outpath C:\Clients\2021\FooBar\TFOutput --config myCustomConfig.json --exfil --aad  ");
@@ -108,9 +107,11 @@ namespace TeamFiltration
  └╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╜
    ╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜
 ";
+
             Console.WriteLine(asci);
-            Console.WriteLine("[♥] TeamFiltration V0.3.3.6 PUBLIC, created by @Flangvik @TrustedSec");
+            Console.WriteLine("[♥] TeamFiltration V0.3.3.7 PUBLIC, created by @Flangvik @TrustedSec");
             Console.WriteLine($"[+] Args parsed {string.Join(' ', args)}");
+
 
 
             if (args.Length == 0)

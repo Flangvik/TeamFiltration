@@ -261,7 +261,7 @@ namespace TeamFiltration.Modules
 
                 var dehashedData = await dehashedHandler.FetchDomainEntries(args.GetValue("--domain"));
 
-                foreach (var email in dehashedData.entries.Select(x => x.email).Distinct())
+                foreach (var email in dehashedData.entries.Select(x => x.email).Distinct().Where(a => Helpers.Generic.IsValidEmail(a)))
                 {
                     _databaseHandle.WriteLog(new Log("ENUM", $"{email} valid!", ""));
                     _databaseHandle.WriteValidAcc(new ValidAccount() { Username = email, Id = Helpers.Generic.StringToGUID(email).ToString(), objectId = "" });
@@ -367,47 +367,45 @@ namespace TeamFiltration.Modules
                 }
                 else if (options.ValidateAccsTeams)
                 {
-                    if(Helpers.Generic.IsValidEmail(_globalProperties.TeamFiltrationConfig.SacrificialO365Username) || string.IsNullOrEmpty(_globalProperties.TeamFiltrationConfig.SacrificialO365Passwords))
+                    if (Helpers.Generic.IsValidEmail(_globalProperties?.TeamFiltrationConfig?.SacrificialO365Username) && !string.IsNullOrEmpty(_globalProperties?.TeamFiltrationConfig?.SacrificialO365Passwords))
                     {
+                        var approcTime = (int)Math.Round(TimeSpan.FromSeconds(((double)userListData.Count() / 300)).TotalMinutes);
 
-                   
-                    var approcTime = (int)Math.Round(TimeSpan.FromSeconds(((double)userListData.Count() / 300)).TotalMinutes);
+                        _databaseHandle.WriteLog(new Log("ENUM", $"Enumerating { userListData.Count() } possible accounts, this will take ~{approcTime} minutes", ""));
 
-                    _databaseHandle.WriteLog(new Log("ENUM", $"Enumerating { userListData.Count() } possible accounts, this will take ~{approcTime} minutes", ""));
+                        var teamsToken = await msolHandler.LoginAttemptFireProx(_globalProperties.TeamFiltrationConfig.SacrificialO365Username, _globalProperties.TeamFiltrationConfig.SacrificialO365Passwords, _globalProperties.GetFireProxURL(), ("https://api.spaces.skype.com/", "1fec8e78-bce4-4aaf-ab1b-5451cc387264"));
 
-                    var teamsToken = await msolHandler.LoginAttemptFireProx(_globalProperties.TeamFiltrationConfig.SacrificialO365Username, _globalProperties.TeamFiltrationConfig.SacrificialO365Passwords, _globalProperties.GetFireProxURL(), ("https://api.spaces.skype.com/", "1fec8e78-bce4-4aaf-ab1b-5451cc387264"));
-
-                    if (teamsToken.bearerToken != null)
-                    {
-
-                        _databaseHandle.WriteLog(new Log("ENUM", $"Successfully got Teams token for sacrificial account", ""));
-
-                        TeamsHandler teamsHandler = new TeamsHandler(teamsToken.bearerToken, _globalProperties);
-
-                        //Pull out objectId's
-                        var previusValidAccs = _databaseHandle.QueryValidAccount();
-                        if (previusValidAccs.Count() > 0)
+                        if (teamsToken.bearerToken != null)
                         {
-                            _teamsObjectIds = previusValidAccs?.Select(x => x?.objectId).ToList();
+
+                            _databaseHandle.WriteLog(new Log("ENUM", $"Successfully got Teams token for sacrificial account", ""));
+
+                            TeamsHandler teamsHandler = new TeamsHandler(teamsToken.bearerToken, _globalProperties);
+
+                            //Pull out objectId's
+                            var previusValidAccs = _databaseHandle.QueryValidAccount();
+                            if (previusValidAccs.Count() > 0)
+                            {
+                                _teamsObjectIds = previusValidAccs?.Select(x => x?.objectId).ToList();
+                            }
+
+
+                            //We need a skype token to get other stuff
+                            await teamsHandler.SetSkypeToken();
+
+                            _databaseHandle.WriteLog(new Log("ENUM", $"Loaded {userListData.Count()} usernames", ""));
+                            await userListData.ParallelForEachAsync(
+                            async user =>
+                            {
+
+
+                                await ValidUserWrapperTeams(teamsHandler, user);
+
+
+
+                            },
+                            maxDegreeOfParallelism: 300);
                         }
-
-
-                        //We need a skype token to get other stuff
-                        await teamsHandler.SetSkypeToken();
-
-                        _databaseHandle.WriteLog(new Log("ENUM", $"Loaded {userListData.Count()} usernames", ""));
-                        await userListData.ParallelForEachAsync(
-                        async user =>
-                        {
-
-
-                            await ValidUserWrapperTeams(teamsHandler, user);
-
-
-
-                        },
-                        maxDegreeOfParallelism: 300);
-                    }
                     }
                     else
                     {

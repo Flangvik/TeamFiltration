@@ -294,7 +294,7 @@ namespace TeamFiltration.Modules
 
 
             var passwordListPath = args.GetValue("--passwords");
-            var exludeListPath = args.GetValue("--exlude");
+            var exludeListPath = args.GetValue("--exclude");
             var comboListPath = args.GetValue("--combo");
 
             List<string> passwordList = new List<string>() { };

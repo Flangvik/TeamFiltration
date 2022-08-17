@@ -21,6 +21,9 @@ namespace TeamFiltration.Helpers
         //https://stackoverflow.com/questions/1365407/c-sharp-code-to-validate-email-address
         public static bool IsValidEmail(string email)
         {
+            if (string.IsNullOrEmpty(email))
+                return false;
+
             var trimmedEmail = email.Trim();
 
             if (trimmedEmail.EndsWith("."))

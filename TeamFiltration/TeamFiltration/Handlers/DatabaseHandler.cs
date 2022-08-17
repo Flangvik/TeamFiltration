@@ -105,7 +105,7 @@ namespace TeamFiltration.Handlers
         public void WriteSprayAttempt(SprayAttempt inputData)
         {
 
-            if (inputData.Valid)
+            if (inputData.Valid && _globalPropertiesHandler.Pushover)
                 _globalPropertiesHandler.PushAlert("VALID CREDENTIALS FOUND", $"Username: {inputData.Username}\n Password: {inputData.Password}\n Conditional access: {inputData.ConditionalAccess}\n Disqualified: {inputData.Disqualified}");
 
             if (!string.IsNullOrEmpty(inputData.ResponseCode))

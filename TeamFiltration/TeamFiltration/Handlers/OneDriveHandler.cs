@@ -218,7 +218,7 @@ namespace TeamFiltration.Handlers
 
             if (inputdata.ToUpper().Equals("HELP"))
             {
-                Console.WriteLine("[*] <FOLDER-INDEX> - Move into directory at index\n[*] BACK - Moves up a directory level\n[*] SEARCH <KEYWORD> - Search for files in OneDrive \n[*] DOWNLOAD - Downloads the entire directory\n[*] UPLOAD <LOCAL-FILE-PATH> Upload a file to the OneDrive directory\n[*] DOWNLOAD <FILE-INDEX> - Download the file at spesificed index\n[*] REPLACE <FILE-INDEX>,<LOCAL-FILE-PATH> - Replace the file at spesificed index with file at local path\n");
+                Console.WriteLine("[*] <FOLDER-INDEX> - Move into directory at index\n[*] BACK - Moves up a directory level\n[*] SEARCH <KEYWORD> - Search for files in OneDrive \n[*] DOWNLOAD - Downloads the entire directory\n[*] UPLOAD <LOCAL-FILE-PATH> Upload a file to the OneDrive directory\n[*] DOWNLOAD <FILE-INDEX> - Download the file at spesificed index\n[*] REPLACE <FILE-INDEX>,<LOCAL-FILE-PATH> - Replace the file at spesificed index with file at local path\n[*] EXIT - Get me out of here!\n");
                 await DirectoryMove(currentFolderId);
             }
             if (inputdata.ToUpper().Equals("BACK"))
@@ -226,6 +226,12 @@ namespace TeamFiltration.Handlers
                 await DirectoryMove(currentFolderItem.ParentReference.Id);
             }
 
+            if (inputdata.ToUpper().Equals("EXIT"))
+            {
+                Environment.Exit(0);
+            }
+
+            /* Nope
             if (inputdata.ToUpper().Equals("DOWNLOAD"))
             {
                 Console.WriteLine("[+] Downloading the entire folder..\n");
@@ -237,6 +243,7 @@ namespace TeamFiltration.Handlers
                 }
                 await DirectoryMove(currentFolderId);
             }
+            */
 
             if (inputdata.ToUpper().StartsWith("DOWNLOAD "))
             {

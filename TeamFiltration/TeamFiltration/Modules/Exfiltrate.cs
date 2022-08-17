@@ -80,6 +80,15 @@ namespace TeamFiltration.Modules
         {
             try
             {
+                Console.WriteLine();
+                Console.WriteLine("[!] The exfiltration modules does not use FireProx, ORIGIN IP WILL BE LOGGED, are you an adult? (Y/N)");
+                var response = Console.ReadLine();
+
+                if (!response.ToUpper().Equals("Y"))
+                {
+                    return;
+                }
+
                 //We check if our spray gave us a valid token, and that the token is valid
                 var latestPulledToken = _databaseHandler.TokenAvailable(accObject, "https://api.spaces.skype.com");
 
@@ -173,8 +182,8 @@ namespace TeamFiltration.Modules
                         Console.WriteLine("[!] Failed to deserialize cookie dump file, does the format match SharpChrome's output?");
                         Environment.Exit(0);
                     }
-                    
-                  
+
+
                 }
                 else
                 {
