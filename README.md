@@ -301,25 +301,65 @@ Create the following bash script inside the folder!
 ```
 #!/bin/bash
 # create_fireprox_instances.sh
+
+# https://stackoverflow.com/questions/1527049/how-can-i-join-elements-of-an-array-in-bash
+function join_by { local IFS="$1"; shift; echo "$*"; }
+
 # Possible AWS regions
-array=( us-east-1 us-west-1 us-west-2 ca-central-1 eu-central-1 eu-west-1 eu-west-2 eu-west-3 eu-north-1 )
+regionsArray=( us-east-1 us-west-1 us-west-2 ca-central-1 eu-central-1 eu-west-1 eu-west-2 eu-west-3 eu-north-1 )
 
 #Endpoint to be proxied
-url="https://login.microsoftonline.com/"
+msolEndpoint="https://login.microsoftonline.com/"
+msolEndpointUs="https://login.microsoftonline.us/"
+teamsEnumEndpoint="https://teams.microsoft.com/api/mt/"
+aadSSoEndpoint="https://autologon.microsoftazuread-sso.com/"
 
-#Switch out to generate with these
-#url="https://login.microsoftonline.us/"
-#url="https://teams.microsoft.com/api/mt/"
+
+declare -a msolFireProxEndpoints
+declare -a msolFireProxEndpointsUs
+declare -a teamsEnumFireProxEndpoints
+declare -a aadSSoFireProxEndpoints
 
 #generate them all
-for i in "${array[@]}"
-do
-        python3 fire.py --access_key <AWS-ACCESS-KEY> --secret_access_key <AWS-SECRET-KEY> --region $i --command create --url $url
+for i in "${regionsArray[@]}"
+do 
+	newMsolEndpoint=$( python3 fire.py --access_key <AWS-ACCESS-KEY> --secret_access_key  <AWS-SECRET-KEY> --region $i --command create --url $msolEndpoint | grep -iPo "https?:\/\/(www\.)?[-a-zA-Z0-9]{10}.*\.amazonaws\.com\/fireprox\/" )
+    msolFireProxEndpoints=("${msolFireProxEndpoints[@]}" "\"$newMsolEndpoint\"")
+	echo "[+] Created $newMsolEndpoint that points to $msolEndpoint"
+
+	newMsolEndpointUs=$(python3 fire.py --access_key <AWS-ACCESS-KEY> --secret_access_key  <AWS-SECRET-KEY> --region $i --command create --url $msolEndpointUs | grep -iPo "https?:\/\/(www\.)?[-a-zA-Z0-9]{10}.*\.amazonaws\.com\/fireprox\/" )
+	msolFireProxEndpointsUs=("${msolFireProxEndpointsUs[@]}" "$newMsolEndpointUs")
+	echo "[+] Created $newMsolEndpointUs that points to $msolEndpointUs"
+
+	newTeamsEnumEndpoint=$(python3 fire.py --access_key <AWS-ACCESS-KEY> --secret_access_key  <AWS-SECRET-KEY> --region $i --command create --url $teamsEnumEndpoint | grep -iPo "https?:\/\/(www\.)?[-a-zA-Z0-9]{10}.*\.amazonaws\.com\/fireprox\/" )
+	teamsEnumFireProxEndpoints=("${teamsEnumFireProxEndpoints[@]}" "$newTeamsEnumEndpoint")
+	echo "[+] Created $newTeamsEnumEndpoint that points to $teamsEnumEndpoint"
+
+	newAadSSoEndpoint=$(python3 fire.py --access_key <AWS-ACCESS-KEY> --secret_access_key  <AWS-SECRET-KEY> --region $i --command create --url $aadSSoEndpoint | grep -iPo "https?:\/\/(www\.)?[-a-zA-Z0-9]{10}.*\.amazonaws\.com\/fireprox\/" )
+	aadSSoFireProxEndpoints=("${aadSSoFireProxEndpoints[@]}" "$newAadSSoEndpoint")
+	echo "[+] Created $newAadSSoEndpoint that points to $aadSSoEndpoint"
+
 done
+	
+	echo "[+] Done, printing jsonArray(s)"
+	echo ""
+
+	msolFireProxEndpointsJsonArray=$(join_by , ${msolFireProxEndpoints[@]})
+	echo "\"msolFireProxEndpoints\":[$msolFireProxEndpointsJsonArray],"
+
+	msolFireProxEndpointsUsJsonArray=$(join_by , ${msolFireProxEndpointsUs[@]})
+	echo "\"msolFireProxEndpointsUs\":[$msolFireProxEndpointsUsJsonArray],"
+
+	teamsEnumFireProxEndpointsJsonArray=$(join_by , ${teamsEnumFireProxEndpoints[@]})
+	echo "\"teamsEnumFireProxEndpoints\":[$teamsEnumFireProxEndpointsJsonArray],"
+
+	aadSSoFireProxEndpointsJsonArray=$(join_by , ${aadSSoFireProxEndpoints[@]})
+	echo "\"aadSSoFireProxEndpoints\":[$aadSSoFireProxEndpointsJsonArray],"
+
 
 ```
 
-Run the bash script multiple times in order to generate url's for the **FireProxEndpoints properties in the JSON config file.
+Fill in our AWS access keys and run the script, the bash script will output the JSON FireProx portion for your config, simply copy and paste! :)  
 
 ## Credits
 
