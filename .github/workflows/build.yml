@@ -62,7 +62,7 @@ jobs:
         with:
           name: TeamFiltration Rolling Release (unstable)
           prerelease: true
-          tag: rolling
+          tag_name: rolling
           files: |
             TeamFiltration_Win${{ matrix.release.suffix }}.zip
             TeamFiltration_Linux${{ matrix.release.suffix }}.zip
