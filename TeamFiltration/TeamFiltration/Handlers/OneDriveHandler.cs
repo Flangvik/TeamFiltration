@@ -40,7 +40,7 @@ namespace TeamFiltration.Handlers
             //We are teams!
 
             _oneDrive = new OneDriveGraphApi("1fec8e78-bce4-4aaf-ab1b-5451cc387264");
-            _oneDrive.FireProxAuthUrl = teamFiltrationConfig.GetFireProxURL().Replace("/common/oauth2/token", "/common/oauth2/v2.0/token");
+            _oneDrive.FireProxAuthUrl = teamFiltrationConfig.GetBaseUrl().Replace("/common/oauth2/token", "/common/oauth2/v2.0/token");
             /*
             oneDrive.headerListObject = new List<(string header, string value)>() {
 

@@ -94,7 +94,7 @@ namespace TeamFiltration.Handlers
             refreshClient.DefaultRequestHeaders.Add("Accept", "application/json");
             refreshClient.DefaultRequestHeaders.Add("User-Agent", "Dalvik/2.1.0 (Linux; U; Android 7.1.2; SM-G955F Build/NRD90M)");
 
-            var httpResp = await refreshClient.PostAsync(_teamFiltrationConfig.GetFireProxURL(), loginPostBody);
+            var httpResp = await refreshClient.PostAsync(_teamFiltrationConfig.GetBaseUrl(), loginPostBody);
             var contentResp = await httpResp.Content.ReadAsStringAsync();
 
             if (httpResp.IsSuccessStatusCode)

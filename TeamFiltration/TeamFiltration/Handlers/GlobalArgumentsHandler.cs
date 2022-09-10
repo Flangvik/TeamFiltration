@@ -121,11 +121,12 @@ namespace TeamFiltration.Handlers
         public string GetBaseUrl(string region = "US")
         {
 
-            return "https://login.microsoftonline.com";
+            return "https://login.microsoftonline.com/common/oauth2/token";
         }
 
         public string GetFireProxURL(string region = "US")
         {
+            
 
             if (UsCloud)
                 return TeamFiltrationConfig.MsolFireProxEndpointsUs.Where(x => x.ToLower().Contains(("." + region + "-").ToLower())).FirstOrDefault();

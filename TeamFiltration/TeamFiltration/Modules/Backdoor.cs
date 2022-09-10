@@ -55,7 +55,7 @@ namespace TeamFiltration.Modules
                 var latestPulledToken = _dataBaseHandler.TokenAvailable(targetLoginObject, "https://api.spaces.skype.com");
                 var latestPulledTokenObjet = JsonConvert.DeserializeObject<BearerTokenResp>(latestPulledToken);
 
-                var msGraphToken = await msolHandler.RefreshAttempt(latestPulledTokenObjet, _globalProperties.GetFireProxURL(), "https://graph.microsoft.com", "1fec8e78-bce4-4aaf-ab1b-5451cc387264");
+                var msGraphToken = await msolHandler.RefreshAttempt(latestPulledTokenObjet, _globalProperties.GetBaseUrl(), "https://graph.microsoft.com", "1fec8e78-bce4-4aaf-ab1b-5451cc387264");
 
                 var oneDriveGrapHandler = new OneDriveHandler(msGraphToken.bearerToken, targetLoginObject.Username, _globalProperties, _dataBaseHandler);
 

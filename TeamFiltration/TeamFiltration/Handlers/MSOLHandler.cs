@@ -515,7 +515,7 @@ namespace TeamFiltration.Handlers
             int redoCount = 0;
 
         Start:
-            var url = _globalProperties.GetFireProxURL().Replace("common/oauth2/token", "common/GetCredentialType");
+            var url = _globalProperties.GetBaseUrl().Replace("common/oauth2/token", "common/GetCredentialType");
 
             var proxy = new WebProxy
             {
@@ -1404,7 +1404,7 @@ namespace TeamFiltration.Handlers
             });
 
 
-                HttpResponseMessage bearerTokenResp = await loginClient.PostAsync(baseUrl + "common/oauth2/token", bearerContent);
+                HttpResponseMessage bearerTokenResp = await loginClient.PostAsync(baseUrl, bearerContent);
                 BearerTokenResp bearerTokenRespData = JsonConvert.DeserializeObject<BearerTokenResp>(await bearerTokenResp.Content.ReadAsStringAsync());
                 return new GetTokenResp() { MFAResponse = null, TokenResp = bearerTokenRespData };
                 // return bearerTokenRespData;
