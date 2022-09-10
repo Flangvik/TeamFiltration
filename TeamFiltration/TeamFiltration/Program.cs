@@ -22,6 +22,7 @@ namespace TeamFiltration
             Console.WriteLine("   --exfil       Load the exfiltration module  \n");
             Console.WriteLine("         --username            Override to target a given username that does not exist in the database");
             Console.WriteLine("         --password            Override to target a given password that does not exist in the database");
+            Console.WriteLine("         --token               Parse an analyze a token, perfom exfil from it");
             Console.WriteLine("         --cookie-dump         Override to target a given account using it's refresk-cookie-collection\n");
             Console.WriteLine("         --all                 Exfiltrate information from ALL SSO resources (Graph, OWA, SharePoint, OneDrive, Teams)");
             Console.WriteLine("         --aad                 Exfiltrate information from Graph API (domain users and groups)");
@@ -109,7 +110,7 @@ namespace TeamFiltration
 ";
 
             Console.WriteLine(asci);
-            Console.WriteLine("[♥] TeamFiltration V0.3.3.7 PUBLIC, created by @Flangvik @TrustedSec");
+            Console.WriteLine("[♥] TeamFiltration V0.3.3.8 PUBLIC, created by @Flangvik @TrustedSec");
             Console.WriteLine($"[+] Args parsed {string.Join(' ', args)}");
 
 

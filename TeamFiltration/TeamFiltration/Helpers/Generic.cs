@@ -28,7 +28,7 @@ namespace TeamFiltration.Helpers
 
             if (trimmedEmail.EndsWith("."))
             {
-                return false; 
+                return false;
             }
             try
             {
@@ -99,6 +99,8 @@ namespace TeamFiltration.Helpers
             return false;
         }
 
+
+
         public static string GetTenantId(string access_token)
         {
 
@@ -131,6 +133,11 @@ namespace TeamFiltration.Helpers
             JwtSecurityToken jwtSecToken = jwsSecHandler.ReadJwtToken(access_token);
 
             jwtSecToken.Payload.TryGetValue("unique_name", out var usernameobject);
+
+            if (string.IsNullOrEmpty(usernameobject?.ToString()))
+            {
+                return ($"MissingUsername_{GetTenantId(access_token)}");
+            }
             return usernameobject?.ToString();
 
 
@@ -291,8 +298,8 @@ namespace TeamFiltration.Helpers
             CultureInfo ci = new CultureInfo("en-US");
             var passwords = new List<string>() { };
 
-     
-            
+
+
             //Adding last years Winter is probably a good idea if we are early into this year
             var currentSeason = (Season)Math.Ceiling(new PersianCalendar().GetMonth(dateTimeNow) / 3.0);
 

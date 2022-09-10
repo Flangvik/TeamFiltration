@@ -40,9 +40,7 @@ namespace TeamFiltration.Handlers
                 collectionLink.Upsert(item);
             }
 
-
         }
-
 
 
         public void WriteInvalidAcc(ValidAccount inputData)
@@ -104,7 +102,6 @@ namespace TeamFiltration.Handlers
 
         public void WriteSprayAttempt(SprayAttempt inputData)
         {
-
             if (inputData.Valid && _globalPropertiesHandler.Pushover)
                 _globalPropertiesHandler.PushAlert("VALID CREDENTIALS FOUND", $"Username: {inputData.Username}\n Password: {inputData.Password}\n Conditional access: {inputData.ConditionalAccess}\n Disqualified: {inputData.Disqualified}");
 

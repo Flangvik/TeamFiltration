@@ -174,10 +174,7 @@ namespace TeamFiltration.Modules
                         _databaseHandle.WriteValidAcc(new ValidAccount() { Username = username, Id = Helpers.Generic.StringToGUID(username).ToString() });
                     }
                 }
-                //If we get a valid response, parse and set the token data as json
-                //if (errorCodeOut.valid)
-                //    sprayAttempt.ResponseData = JsonConvert.SerializeObject(loginResp.bearerToken);
-
+    
                 sprayAttempt.ResponseCode = respCode;
                 sprayAttempt.Valid = errorCodeOut.valid;
                 sprayAttempt.Disqualified = errorCodeOut.disqualified;

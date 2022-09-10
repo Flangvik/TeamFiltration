@@ -1,8 +1,7 @@
 {
   "profiles": {
     "TeamFiltration": {
-      "commandName": "Project",
-      "commandLineArgs": ""
+      "commandName": "Project"
     }
   }
 }

