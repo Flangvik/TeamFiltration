@@ -1,0 +1,72 @@
+name: Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+
+    strategy:
+      matrix:
+        release:
+          - type: Release
+            suffix: ''
+
+    name: Build (${{ matrix.release.type }})
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v2
+        with:
+          dotnet-version: 3.1.x
+
+      - name: Restore Dependencies
+        run: dotnet restore $PWD/TeamFiltration/
+
+      - name: Build for Windows
+        continue-on-error: true
+        run: dotnet publish $PWD/TeamFiltration/ -c ${{ matrix.release.type }} -r win-x64 -p:PublishSingleFile=true --self-contained true --output $PWD/TeamFiltrationRelease/Windows/ -p:Version=0.0.0-rolling+${{ github.sha }}
+
+      - name: Build for Linux
+        continue-on-error: true
+        run: dotnet publish $PWD/TeamFiltration/ -c ${{ matrix.release.type }} -r linux-x64 -p:PublishSingleFile=true --self-contained true --output $PWD/TeamFiltrationRelease/Linux/ -p:Version=0.0.0-rolling+${{ github.sha }}
+        
+      - name: Build for Mac
+        continue-on-error: true
+        run: dotnet publish $PWD/TeamFiltration/ -c ${{ matrix.release.type }} -r osx-x64 -p:PublishSingleFile=true --self-contained true --output $PWD/TeamFiltrationRelease/Mac/ -p:Version=0.0.0-rolling+${{ github.sha }}
+
+      - name: Zip Windows
+        if: "! startsWith(github.event_name, 'pull_request')"
+        run: 7z a -tzip -mx9 TeamFiltration_Win${{ matrix.release.suffix }}.zip $PWD/TeamFiltrationRelease/Windows/TeamFiltration.exe
+ 
+      - name: Zip Linux
+        if: "! startsWith(github.event_name, 'pull_request')"
+        run: 7z a -tzip -mx9 TeamFiltration_Linux${{ matrix.release.suffix }}.zip $PWD/TeamFiltrationRelease/Linux/TeamFiltration
+
+      - name: Zip Mac
+        if: "! startsWith(github.event_name, 'pull_request')"
+        run: 7z a -tzip -mx9 TeamFiltration_Mac${{ matrix.release.suffix }}.zip $PWD/TeamFiltrationRelease/Mac/TeamFiltration
+
+      - name: Update Rolling Release
+        if: "! startsWith(github.event_name, 'pull_request')"
+        uses: softprops/action-gh-release@v1
+        with:
+          name: TeamFiltration Rolling Release (unstable)
+          prerelease: true
+          tag: rolling
+          files: |
+            TeamFiltration_Win${{ matrix.release.suffix }}.zip
+            TeamFiltration_Linux${{ matrix.release.suffix }}.zip
+            TeamFiltration_Mac${{ matrix.release.suffix }}.zip
+          body: |
+            Rolling release of TeamFiltration compiled from source (${{ github.sha }})
+            This is automatically kept up-to-date with the `${{ github.ref_name }}` ${{ github.ref_type }}.
