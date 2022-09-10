@@ -159,7 +159,7 @@ You can also exfiltrate Emails + Attachments, OneDrive files, Teams Chat Logs + 
          --tokens              Exfiltrate JSON formated JTW-tokens for SSO resources (MsGraph,AdGraph, Outlook, SharePoint, OneDrive, Teams)
 ```
 
-## TeamFiltration Configruation
+## TeamFiltration Configuration
 
 Below is an example TeamFiltration config file, the configuration file needs to be supplied everytime you run TeamFiltration, using the --config argument.
 ```
