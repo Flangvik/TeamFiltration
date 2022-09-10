@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "TeamFiltration": {
-      "commandName": "Project",
-      "commandLineArgs": "--outpath foobar --exfil --username oddvar.moe@legitcorp.net --password \"Stronk_Pass123!\" --all"
-    }
-  }
-}

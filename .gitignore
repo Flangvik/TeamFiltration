@@ -12,7 +12,7 @@
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
-
+*launchSettings.json
 *.DS_Store
 
 # Mono auto generated files
