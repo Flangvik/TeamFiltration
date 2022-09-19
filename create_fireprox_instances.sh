@@ -58,5 +58,5 @@ done
 
         aadSSoFireProxEndpointsJsonArray=$(join_by , ${aadSSoFireProxEndpoints[@]})
         echo "\"aadSSoFireProxEndpoints\": [$aadSSoFireProxEndpointsJsonArray],"
-(venv) root@phserver:/opt/fireprox#
+
 
