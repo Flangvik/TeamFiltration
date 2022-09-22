@@ -34,6 +34,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="Polly" Version="7.2.3" />
     <PackageReference Include="PushoverNET" Version="1.0.28" />
+    <PackageReference Include="System.Data.SQLite" Version="1.0.116" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.16.0" />
     <PackageReference Include="TimeZoneConverter" Version="5.0.0" />
   </ItemGroup>

