@@ -27,6 +27,7 @@ namespace TeamFiltration
             Console.WriteLine("         --all                 Exfiltrate information from ALL SSO resources (Graph, OWA, SharePoint, OneDrive, Teams)");
             Console.WriteLine("         --aad                 Exfiltrate information from Graph API (domain users and groups)");
             Console.WriteLine("         --teams               Exfiltrate information from Teams API (files, chatlogs, attachments, contactlist)");
+            Console.WriteLine("         --teams-db            Exfiltrate cookies and authentication tokens from an exfiltrated Teams database");
             Console.WriteLine("         --onedrive            Exfiltrate information from OneDrive/SharePoint API (accessible SharePoint files and the users entire OneDrive directory)");
             Console.WriteLine("         --owa                 Exfiltrate information from the Outlook REST API (The last 2k emails, both sent and received) ");
             Console.WriteLine("               --owa-limit     Set the max amount of emails to exfiltrate, default is 2k.");
