@@ -152,18 +152,16 @@ namespace TeamFiltration.Handlers
             return workingWithDataResp;
         }
 
-        public async Task<(bool isValid, string objectId)> EnumUser(string username)
+        public async Task<(bool isValid, string objectId, TeamsExtSearchRep responseObject)> EnumUser(string username)
         {
 
             int failedCount = 0;
 
         failedResp:
             //TODO:Add logic to select FireProx endpoint based on current location 
-
             var enumUserUrl = _globalArgsHandler.TeamFiltrationConfig.TeamsEnumFireProxEndpoints[(new Random()).Next(0, _globalArgsHandler.TeamFiltrationConfig.TeamsEnumFireProxEndpoints.Count())] + $"{TeamsRegion}/beta/users/{username}/externalsearchv3";
-         
             var enumUserReq = await _teamsClient.PollyGetAsync(enumUserUrl);
-            //var enumUserReq = await _teamsClient.GetAsync(enumUserUrl);
+    
 
 
             if (enumUserReq.IsSuccessStatusCode)
@@ -176,8 +174,8 @@ namespace TeamFiltration.Handlers
                 if (userResp.Contains("tenantId"))
                 {
                     //get the object
-                    var responeObject = JsonConvert.DeserializeObject<List<TeamsExtSearchRep>>(userResp);
-                   //Console.WriteLine(JsonConvert.SerializeObject(responeObject, Formatting.Indented));
+                    List<TeamsExtSearchRep> responeObject = JsonConvert.DeserializeObject<List<TeamsExtSearchRep>>(userResp);
+                    //Console.WriteLine(JsonConvert.SerializeObject(responeObject, Formatting.Indented));
                     //Any size
                     if (responeObject.Count() > 0)
                     {
@@ -189,34 +187,34 @@ namespace TeamFiltration.Handlers
                             //Check that the coExistenceMode is not Unknown
                             && !responeObject.FirstOrDefault().featureSettings.coExistenceMode.Equals("Unknown")
 
-                            //Check that the Display != egauls email. 
+                            //Check that the Display != Equals email. 
                             && !responeObject.FirstOrDefault().displayName.Equals(username)
 
                             //Check that the UPN matches the email your are looking for
                             && responeObject.FirstOrDefault().userPrincipalName.ToLower().Equals(username.ToLower())
                             )
                         {
-                            return (true, responeObject.FirstOrDefault().objectId);
+                            return (true, responeObject.FirstOrDefault().objectId, responeObject.FirstOrDefault());
                         }
                     }
                 }
-                return (false, "");
+                return (false, "", null);
 
             }
             else if (enumUserReq.StatusCode.Equals(HttpStatusCode.Forbidden))
             {
                 //If we get the forbidden error response, we can assume it's valid!
-                return (true, Guid.NewGuid().ToString());
+                return (true, Guid.NewGuid().ToString(), null);
             }
             else if (enumUserReq.StatusCode.Equals(HttpStatusCode.InternalServerError))
             {
                 failedCount++;
                 if (failedCount > 2)
-                    return (false, "");
+                    return (false, "", null);
                 else
                     goto failedResp;
             }
-            return (false, "");
+            return (false, "", null);
 
         }
 

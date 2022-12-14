@@ -455,13 +455,13 @@ namespace TeamFiltration.Helpers
             errorCodes.Add("AADSTS50053", ("LOCKED", false, false, false));
             errorCodes.Add("AADSTS50057", ("DISABLED", false, true, false));
 
-            errorCodes.Add("AADSTS50055", ("EXPIRED", false, true, false));
+            errorCodes.Add("AADSTS50055", ("VALID BUT EXPIRED PASSWORD", false, true, false));
             errorCodes.Add("AADSTS50128", ("INVALID TENANT", false, true, false));
             errorCodes.Add("AADSTS50059", ("INVALID TENANT", false, true, false));
 
 
-            errorCodes.Add("AADSTS53003", ("BLOCKED BY ACCESS POLICY", true, false, true));
-            errorCodes.Add("AADSTS50158", ("BLOCKED BY ACCESS POLICY", true, false, true));
+            errorCodes.Add("AADSTS53003", ("VALID BUT BLOCKED BY ACCESS POLICY", true, false, true));
+            errorCodes.Add("AADSTS50158", ("VALID BUT BLOCKED BY ACCESS POLICY", true, false, true));
 
             return errorCodes;
         }

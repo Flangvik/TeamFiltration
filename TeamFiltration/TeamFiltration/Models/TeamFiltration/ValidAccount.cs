@@ -16,5 +16,6 @@ namespace TeamFiltration.Models.TeamFiltration
         public string Id { get; set; }
         public string Username { get; set; }
         public string objectId { get; set; }
+        public string DisplayName { get; set; }
     }
 }

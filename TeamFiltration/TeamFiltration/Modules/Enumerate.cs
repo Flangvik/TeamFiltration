@@ -74,7 +74,15 @@ namespace TeamFiltration.Modules
 
                         try
                         {
-                            _databaseHandle.WriteValidAcc(new ValidAccount() { Username = username, Id = Helpers.Generic.StringToGUID(username).ToString(), objectId = validUser.objectId });
+                            _databaseHandle.WriteValidAcc(new ValidAccount()
+                            {
+                                Username = username,
+                                Id = Helpers.Generic.StringToGUID(username).ToString(),
+                                objectId = validUser.objectId,
+                                DisplayName = (validUser.responseObject != null) ? validUser.responseObject?.displayName : ""
+                            }
+
+                            );
                         }
                         catch (Exception ex)
                         {
@@ -174,7 +182,7 @@ namespace TeamFiltration.Modules
                         _databaseHandle.WriteValidAcc(new ValidAccount() { Username = username, Id = Helpers.Generic.StringToGUID(username).ToString() });
                     }
                 }
-    
+
                 sprayAttempt.ResponseCode = respCode;
                 sprayAttempt.Valid = errorCodeOut.valid;
                 sprayAttempt.Disqualified = errorCodeOut.disqualified;

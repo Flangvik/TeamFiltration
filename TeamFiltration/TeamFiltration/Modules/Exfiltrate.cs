@@ -1239,7 +1239,7 @@ namespace TeamFiltration.Modules
             string cookie = "ESTSAUTHPERSISTENT=" + cookieObjects.Where(x => x.name.Equals("ESTSAUTHPERSISTENT")).FirstOrDefault().value;
 
             //Get the team's access token
-            var teamsToken = (await msolHandler.CookieGetAccessToken(tenantId, cookie, _globalProperties.GetBaseUrl(), targetResource: "https://api.spaces.skype.com")).bearerToken;
+            var teamsToken = (await msolHandler.CookieGetAccessToken(tenantId, cookie, targetResource: "https://api.spaces.skype.com")).bearerToken;
 
             TeamsHandler teamsHandler = new TeamsHandler(teamsToken, _globalProperties);
 

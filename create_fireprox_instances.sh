@@ -31,7 +31,7 @@ do
         echo "[+] Created $newMsolEndpoint that points to $msolEndpoint"
 
         newMsolEndpointUs=$(python3 fire.py --access_key $AWSACCESSKEY --secret_access_key $AWSSECRETKEY --region $i --command create --url $msolEndpointUs | grep -iPo "https?:\/\/(www\.)?[-a-zA-Z0-9]{10}.*\.amazonaws\.com\/fireprox\/" )
-        msolFireProxEndpointsUs=("${msolFireProxEndpointsUs[@]}" "\"$newMsolEndpointUs"."common/oauth2/token\"")
+        msolFireProxEndpointsUs=("${msolFireProxEndpointsUs[@]}" "\"$newMsolEndpointUs""common/oauth2/token\"")
         echo "[+] Created $newMsolEndpointUs that points to $msolEndpointUs"
 
         newTeamsEnumEndpoint=$(python3 fire.py --access_key $AWSACCESSKEY --secret_access_key $AWSSECRETKEY --region $i --command create --url $teamsEnumEndpoint | grep -iPo "https?:\/\/(www\.)?[-a-zA-Z0-9]{10}.*\.amazonaws\.com\/fireprox\/" )
@@ -58,5 +58,3 @@ done
 
         aadSSoFireProxEndpointsJsonArray=$(join_by , ${aadSSoFireProxEndpoints[@]})
         echo "\"aadSSoFireProxEndpoints\": [$aadSSoFireProxEndpointsJsonArray],"
-
-
