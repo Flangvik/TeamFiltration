@@ -18,7 +18,7 @@ namespace TeamFiltration.Handlers
 {
     class SharePointHandler
     {
-        public static HttpClient _sharePointClient;
+        private HttpClient _sharePointClient;
 
         private BearerTokenResp _getBearToken { get; set; }
         private GlobalArgumentsHandler _teamFiltrationConfig { get; set; }
@@ -26,10 +26,11 @@ namespace TeamFiltration.Handlers
         private string _username { get; set; }
 
 
-        public SharePointHandler(BearerTokenResp getBearToken, string username, GlobalArgumentsHandler teamFiltrationConfig, bool debugMode = false)
+        public SharePointHandler(BearerTokenResp getBearToken, string username, GlobalArgumentsHandler teamFiltrationConfig, DatabaseHandler databaseHandler, bool debugMode = false)
         {
             this._getBearToken = getBearToken;
             this._username = username;
+            this._databaseHandler = databaseHandler;
             _teamFiltrationConfig = teamFiltrationConfig;
 
             var proxy = new WebProxy
@@ -77,6 +78,8 @@ namespace TeamFiltration.Handlers
                 {
                     try
                     {
+                        _databaseHandler.WriteLog(new Log("EXFIL", "-->" + file.title));
+
                         //https://XX.sharepoint.com/_api/v2.0/shares/
                         if (file.siteInfo.siteUrl == null)
                         {
@@ -91,8 +94,6 @@ namespace TeamFiltration.Handlers
                     }
                     catch (Exception e)
                     {
-
-                   
                         _databaseHandler.WriteLog(new Log(module, $"Failed to download file {file.title}"));
                     }
                 }

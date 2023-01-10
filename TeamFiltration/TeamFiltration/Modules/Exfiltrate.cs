@@ -454,8 +454,8 @@ namespace TeamFiltration.Modules
         private static async Task OneDriveExfilAsync(BearerTokenResp companySharePointToken, BearerTokenResp msGraphToken, BearerTokenResp teamsToken, BearerTokenResp personalSharePointToken, string outpath)
         {
             var username = Helpers.Generic.GetUsername(teamsToken.access_token);
-            var sharePointHandler = new SharePointHandler(companySharePointToken, username, _globalProperties);
-            var personalSharePointHandler = new SharePointHandler(personalSharePointToken, username, _globalProperties);
+            var sharePointHandler = new SharePointHandler(companySharePointToken, username, _globalProperties, _databaseHandler);
+            var personalSharePointHandler = new SharePointHandler(personalSharePointToken, username, _globalProperties, _databaseHandler);
             var oneDriveGrapHandler = new OneDriveHandler(msGraphToken, username, _globalProperties, _databaseHandler);
             var teamsHandler = new TeamsHandler(teamsToken, _globalProperties);
 
