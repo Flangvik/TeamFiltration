@@ -6,15 +6,17 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TeamFiltration.Models.AWS;
 using TeamFiltration.Models.TeamFiltration;
 using TimeZoneConverter;
+using TeamFiltration.Helpers;
 
 namespace TeamFiltration.Handlers
 {
     public class DatabaseHandler
     {
         public LiteDatabase _globalDatabase { get; set; }
-        public GlobalArgumentsHandler _globalPropertiesHandler { get; set; }
+        //  public GlobalArgumentsHandler _globalPropertiesHandler { get; set; }
         public string DatabaseFullPath { get; set; }
         public void OnProcessExit(object sender, EventArgs e)
         {
@@ -100,7 +102,32 @@ namespace TeamFiltration.Handlers
 
         }
 
-        public void WriteSprayAttempt(SprayAttempt inputData)
+        public void DeleteFireProxEndpoint(string fireProxUrl)
+        {
+            var orders = _globalDatabase.GetCollection<FireProxEndpoint>("fireproxendpoints");
+            orders.DeleteMany(x => x.URL.Equals(fireProxUrl));
+        }
+        public void WriteFireProxEndpoint(FireProxEndpoint endpointData)
+        {
+            endpointData.DateTime = DateTime.Now;
+            var collectionLink = _globalDatabase.GetCollection<FireProxEndpoint>("fireproxendpoints");
+            collectionLink.EnsureIndex(x => x.Id, true);
+            collectionLink.Upsert(endpointData);
+
+
+        }
+
+
+        internal List<FireProxEndpoint> QueryAllFireProxEndpoints()
+        {
+
+            var orders = _globalDatabase.GetCollection<FireProxEndpoint>("fireproxendpoints");
+            return orders.FindAll().ToList();
+        }
+
+
+
+        public void WriteSprayAttempt(SprayAttempt inputData, GlobalArgumentsHandler _globalPropertiesHandler)
         {
             if (inputData.Valid && _globalPropertiesHandler.Pushover)
                 _globalPropertiesHandler.PushAlert("VALID CREDENTIALS FOUND", $"Username: {inputData.Username}\n Password: {inputData.Password}\n Conditional access: {inputData.ConditionalAccess}\n Disqualified: {inputData.Disqualified}");
@@ -121,7 +148,7 @@ namespace TeamFiltration.Handlers
         public void WriteLog(Log inputLog, bool printLog = true, bool WriteLine = true)
         {
             //TimeZoneInfo
-            
+
             //TimeZoneInfo easternZone = TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time");
             TimeZoneInfo easternZone = TZConvert.GetTimeZoneInfo("Eastern Standard Time");
 
@@ -143,18 +170,35 @@ namespace TeamFiltration.Handlers
                 }
 
 
-           // var collectionLink = _globalDatabase.GetCollection<Log>("logs");
-           // collectionLink.EnsureIndex(x => x.Id, true);
-           // collectionLink.Insert(inputLog);
-            
+            // var collectionLink = _globalDatabase.GetCollection<Log>("logs");
+            // collectionLink.EnsureIndex(x => x.Id, true);
+            // collectionLink.Insert(inputLog);
 
         }
-        public DatabaseHandler(GlobalArgumentsHandler globalProperties)
+        public DatabaseHandler(string[] args)
         {
-            _globalPropertiesHandler = globalProperties;
-            Directory.CreateDirectory(globalProperties.OutPutPath);
-            var fullPath = Path.Combine(globalProperties.OutPutPath, @"TeamFiltration.db");
+
+            var OutPutPath = args.GetValue("--outpath");
+
+            if (string.IsNullOrEmpty(OutPutPath))
+            {
+                Console.WriteLine("[+] Your are missing the mandatory --outpath argument, please define it!");
+                Environment.Exit(0);
+            }
+            else
+            {
+                if (Path.HasExtension(OutPutPath))
+                {
+                    Console.WriteLine("[+] The --outpath argument is a FOLDER path, not file. Correct it and try again!");
+                    Environment.Exit(0);
+                }
+
+            }
+
+            Directory.CreateDirectory(OutPutPath);
+            var fullPath = Path.Combine(OutPutPath, @"TeamFiltration.db");
             DatabaseFullPath = fullPath;
+
             _globalDatabase = new LiteDatabase(fullPath);
             AppDomain.CurrentDomain.ProcessExit += new EventHandler(OnProcessExit);
         }

@@ -14,12 +14,13 @@ namespace TeamFiltration.Models.TeamFiltration
 
         /*
             Collection of FireProx endpoints targeting different Microsoft Auth endpoints, when spraying
-        */
+      
 
         public List<string> MsolFireProxEndpointsUs { get; set; }
         public List<string> MsolFireProxEndpoints { get; set; }
         public List<string> TeamsEnumFireProxEndpoints { get; set; }
         public List<string> AadSSoFireProxEndpoints { get; set; }
+          */
 
         /*
             Dehashed API for the enumeration phase
@@ -36,6 +37,8 @@ namespace TeamFiltration.Models.TeamFiltration
         public string SacrificialO365Passwords { get; set; }
 
         public string proxyEndpoint { get; set; }
+        public string AWSAccessKey { get; set; }
+        public string AWSSecretKey { get; set; }
 
     }
 }

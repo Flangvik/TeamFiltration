@@ -149,9 +149,11 @@ namespace TeamFiltration.Modules
 
         public static async Task ExfiltrateAsync(string[] args)
         {
-            _globalProperties = new GlobalArgumentsHandler(args);
+            _databaseHandler = new DatabaseHandler(args);
 
-            _databaseHandler = new DatabaseHandler(_globalProperties);
+            _globalProperties = new GlobalArgumentsHandler(args,_databaseHandler);
+
+           
 
             MSOLHandler msolHandler = new MSOLHandler(_globalProperties, "EXFIL", _databaseHandler);
 
