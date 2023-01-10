@@ -28,7 +28,7 @@ namespace TeamFiltration.Modules
 
             var proxy = new WebProxy
             {
-                Address = new Uri($"http://127.0.0.1:8080"),
+                Address = new Uri(_globalProperties.TeamFiltrationConfig.proxyEndpoint),
                 BypassProxyOnLocal = false,
                 UseDefaultCredentials = false
             };
@@ -75,7 +75,7 @@ namespace TeamFiltration.Modules
 
             var proxy = new WebProxy
             {
-                Address = new Uri($"http://127.0.0.1:8080"),
+                Address = new Uri(_globalProperties.TeamFiltrationConfig.proxyEndpoint),
                 BypassProxyOnLocal = false,
                 UseDefaultCredentials = false
             };

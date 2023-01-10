@@ -37,7 +37,7 @@ namespace TeamFiltration.Handlers
             #region burp debug
             var proxy = new WebProxy
             {
-                Address = new Uri($"http://127.0.0.1:8080"),
+                Address = new Uri(_globalProperties.TeamFiltrationConfig.proxyEndpoint),
                 BypassProxyOnLocal = false,
                 UseDefaultCredentials = false,
 
@@ -104,8 +104,8 @@ namespace TeamFiltration.Handlers
     </s:Body>
 </s:Envelope>";
 
-                //  client.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,''image/webp,*/*;q=0.8'");
-                client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; WebView/3.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.140 Safari/537.36 Edge/18.17763");
+                client.DefaultRequestHeaders.Add("User-Agent", _globalProperties.TeamFiltrationConfig.userAgent);
+               
 
                 var xmlBody = new StringContent(xmlData, Encoding.UTF8, "text/xml");
                 HttpResponseMessage httpResp = await client.PostAsync(aadSsoUrl, xmlBody);
@@ -160,7 +160,7 @@ namespace TeamFiltration.Handlers
                 var adfsURL = new Uri(userRealmResp.ThirdPartyAuthUrl.Split("?")[0]);
 
                 //client.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,''image/webp,; q = 0.8'");
-                client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; WebView/3.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.140 Safari/537.36 Edge/18.17763");
+                client.DefaultRequestHeaders.Add("User-Agent", _globalProperties.TeamFiltrationConfig.userAgent);
 
                 var adfsUrl = $"https://{adfsURL.Host}/adfs/ls/?wfresh=0&wauth=http%3a%2f%2fschemas.microsoft.com%2fws%2f2008%2f06%2fidentity%2fauthenticationmethod%2fpassword&cxhflow=TB&cxhplatformversion=10.0.17763&client-request-id={Guid.NewGuid().ToString()}&username={HttpUtility.UrlEncode(sprayAttempts.Username)}&wa=wsignin1.0&wtrealm=urn%3afederation%3aMicrosoftOnline";
 
@@ -202,7 +202,7 @@ namespace TeamFiltration.Handlers
                 new KeyValuePair<string, string>("scope", "openid")  });
 
                 client.DefaultRequestHeaders.Add("Accept", "application/json");
-                client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; WebView/3.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.140 Safari/537.36 Edge/18.17763");
+                client.DefaultRequestHeaders.Add("User-Agent", _globalProperties.TeamFiltrationConfig.userAgent);
 
 
                 HttpResponseMessage httpResp = await client.PostAsync(sprayAttempts.FireProxURL, loginPostBody);
@@ -223,7 +223,7 @@ namespace TeamFiltration.Handlers
         {
             var proxy = new WebProxy
             {
-                Address = new Uri($"http://127.0.0.1:8080"),
+                Address = new Uri(_globalProperties.TeamFiltrationConfig.proxyEndpoint),
                 BypassProxyOnLocal = false,
                 UseDefaultCredentials = false,
             };
@@ -248,7 +248,7 @@ namespace TeamFiltration.Handlers
 
             client.DefaultRequestHeaders.Add("Cookie", cookieData);
             client.DefaultRequestHeaders.Add("Accept", "application/json");
-            client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; WebView/3.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.140 Safari/537.36 Edge/18.17763");
+            client.DefaultRequestHeaders.Add("User-Agent", _globalProperties.TeamFiltrationConfig.userAgent);
 
             var url = baseUrl + "/" + tenantId + "/oauth2/v2.0/authorize?response_type=token&grant_type=authorization_code&scope=" + "https://" + new Uri(targetResource).Host + "//.default openid profile&client_id=" + clientId + "&redirect_uri=https://teams.microsoft.com/go&client_info=1&claims={\"access_token\":{\"xms_cc\":{\"values\":[\"CP1\"]}}}&client-request-id=" + Guid.NewGuid().ToString() + "&windows_api_version=2.0";
            
@@ -324,7 +324,7 @@ namespace TeamFiltration.Handlers
             }
             var proxy = new WebProxy
             {
-                Address = new Uri($"http://127.0.0.1:8080"),
+                Address = new Uri(_globalProperties.TeamFiltrationConfig.proxyEndpoint),
                 BypassProxyOnLocal = false,
                 UseDefaultCredentials = false,
 
@@ -363,7 +363,7 @@ namespace TeamFiltration.Handlers
 
 
             client.DefaultRequestHeaders.Add("Accept", "application/json");
-            client.DefaultRequestHeaders.Add("User-Agent", "Dalvik/2.1.0 (Linux; U; Android 7.1.2; SM-G955F Build/NRD90M)");
+            client.DefaultRequestHeaders.Add("User-Agent", _globalProperties.TeamFiltrationConfig.userAgent);
 
             //Add some error handling here
             var httpResp = await client.PostAsync(url, loginPostBody);
@@ -378,7 +378,7 @@ namespace TeamFiltration.Handlers
                 _databaseHandler.WriteToken(new PulledTokens()
                 {
                     ResponseData = contentResp,
-                    ResourceClientId = "1fec8e78-bce4-4aaf-ab1b-5451cc387264",
+                    ResourceClientId = clientId,
                     ResourceUri = "https://" + new Uri(resURI).Host,
                     Username = Helpers.Generic.GetUsername(tokenResp.access_token)
                 });
@@ -405,7 +405,7 @@ namespace TeamFiltration.Handlers
 
             var proxy = new WebProxy
             {
-                Address = new Uri($"http://127.0.0.1:8080"),
+                Address = new Uri(_globalProperties.TeamFiltrationConfig.proxyEndpoint),
                 BypassProxyOnLocal = false,
                 UseDefaultCredentials = false,
             };
@@ -443,7 +443,7 @@ namespace TeamFiltration.Handlers
             });
 
             client.DefaultRequestHeaders.Add("Accept", "application/json");
-            client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; WebView/3.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.140 Safari/537.36 Edge/18.17763");
+            client.DefaultRequestHeaders.Add("User-Agent", _globalProperties.TeamFiltrationConfig.userAgent);
 
 
             HttpResponseMessage httpResp = await client.PostAsync(url, loginPostBody);
@@ -479,7 +479,7 @@ namespace TeamFiltration.Handlers
 
             var proxy = new WebProxy
             {
-                Address = new Uri($"http://127.0.0.1:8080"),
+                Address = new Uri(_globalProperties.TeamFiltrationConfig.proxyEndpoint),
                 BypassProxyOnLocal = false,
                 UseDefaultCredentials = false
             };
@@ -557,7 +557,7 @@ namespace TeamFiltration.Handlers
             // This is for debug , eg burp
             var proxy = new WebProxy
             {
-                Address = new Uri($"http://127.0.0.1:8080"),
+                Address = new Uri(_globalProperties.TeamFiltrationConfig.proxyEndpoint),
                 BypassProxyOnLocal = false,
                 UseDefaultCredentials = false,
 
@@ -612,7 +612,7 @@ namespace TeamFiltration.Handlers
             loginClient.DefaultRequestHeaders.Add("tb-aad-device-family", "3");
             loginClient.DefaultRequestHeaders.Add("Origin", "https://login.microsoftonline.com");
             loginClient.DefaultRequestHeaders.Add("Host", new Uri(baseUrl).Host);
-            loginClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; WebView/3.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.140 Safari/537.36 Edge/18.17763");
+            loginClient.DefaultRequestHeaders.Add("User-Agent", _globalProperties.TeamFiltrationConfig.userAgent);
 
             //Send the GET req
             HttpResponseMessage oAuthResp = await loginClient.PollyGetAsync(oAuthUrl_Authorize);

@@ -31,7 +31,7 @@ namespace TeamFiltration.Handlers
             _globalArgsHandler = teamFiltrationConfig;
             var proxy = new WebProxy
             {
-                Address = new Uri($"http://127.0.0.1:8080"),
+                Address = new Uri(_globalArgsHandler.TeamFiltrationConfig.proxyEndpoint),
                 BypassProxyOnLocal = false,
                 UseDefaultCredentials = false,
             };
@@ -61,7 +61,7 @@ namespace TeamFiltration.Handlers
             teamsClient.DefaultRequestHeaders.Add("x-client-SKU", "MSAL.Android");
             teamsClient.DefaultRequestHeaders.Add("x-app-name", "com.microsoft.teams");
             */
-            _teamsClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Teams/1.3.00.30866 Chrome/80.0.3987.165 Electron/8.5.1 Safari/537.36");
+            _teamsClient.DefaultRequestHeaders.Add("User-Agent", teamFiltrationConfig.TeamFiltrationConfig.userAgent);
             _teamsClient.DefaultRequestHeaders.Add("x-ms-client-caller", "x-ms-client-caller");
             _teamsClient.DefaultRequestHeaders.Add("x-ms-client-version", "27/1.0.0.2021011237");
             _teamsClient.DefaultRequestHeaders.Add("Referer", "https://teams.microsoft.com/_");
