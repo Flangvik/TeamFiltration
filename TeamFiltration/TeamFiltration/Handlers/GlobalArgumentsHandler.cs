@@ -27,6 +27,7 @@ namespace TeamFiltration.Handlers
         private Pushover _pushClient { get; set; }
         public AWSHandler _awsHandler { get; set; }
         private DatabaseHandler _databaseHandler { get; set; }
+        public string[] AWSRegions { get; set; } = { "us-east-1", "us-west-1", "us-west-2", "ca-central-1", "eu-central-1", "eu-west-1", "eu-west-2", "eu-west-3", "eu-north-1" };
 
 
 
@@ -121,12 +122,6 @@ namespace TeamFiltration.Handlers
             }
 
         }
-        public string[] GetRegions()
-        {
-            string[] regionsArray = { "us-east-1", "us-west-1", "us-west-2", "ca-central-1", "eu-central-1", "eu-west-1", "eu-west-2", "eu-west-3", "eu-north-1" };
-            return regionsArray;
-        }
-
         public string GetBaseUrl(string region = "US")
         {
             return "https://login.microsoftonline.com/common/oauth2/token";
@@ -134,7 +129,7 @@ namespace TeamFiltration.Handlers
 
         public (Amazon.APIGateway.Model.CreateDeploymentRequest, Models.AWS.FireProxEndpoint, string fireProxUrl) GetFireProxURLObject(string url, int regionCounter)
         {
-            var currentRegion = GetRegions()[regionCounter];
+            var currentRegion = this.AWSRegions[regionCounter];
             (Amazon.APIGateway.Model.CreateDeploymentRequest, Models.AWS.FireProxEndpoint) awsEndpoint = _awsHandler.CreateFireProxEndPoint(url, "microsoftonlineUSTemp", currentRegion).GetAwaiter().GetResult();
             return (awsEndpoint.Item1, awsEndpoint.Item2, $"https://{awsEndpoint.Item1.RestApiId}.execute-api.{currentRegion}.amazonaws.com/fireprox/");
 
@@ -142,9 +137,21 @@ namespace TeamFiltration.Handlers
         }
         public string GetFireProxURL(string url, int regionCounter)
         {
-            var currentRegion = GetRegions()[regionCounter];
-            (Amazon.APIGateway.Model.CreateDeploymentRequest, Models.AWS.FireProxEndpoint) awsEndpoint = _awsHandler.CreateFireProxEndPoint(url, "microsoftonlineUSTemp", currentRegion).GetAwaiter().GetResult();
-            return $"https://{awsEndpoint.Item1.RestApiId}.execute-api.{currentRegion}.amazonaws.com/fireprox/";
+
+            if (AWSFireProx)
+            {
+                var currentRegion = this.AWSRegions[regionCounter];
+                (Amazon.APIGateway.Model.CreateDeploymentRequest, Models.AWS.FireProxEndpoint) awsEndpoint = _awsHandler.CreateFireProxEndPoint(url, "microsoftonlineUSTemp", currentRegion).GetAwaiter().GetResult();
+                return $"https://{awsEndpoint.Item1.RestApiId}.execute-api.{currentRegion}.amazonaws.com/fireprox/";
+            }
+            else
+            {
+                Console.WriteLine("[+] Missing AWS SecretKey and AccessKey, unable to create needed FireProx endpoint, exiting..");
+                Environment.Exit(0);
+                return "";
+            }
+
+    
 
 
         }

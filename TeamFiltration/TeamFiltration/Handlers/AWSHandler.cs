@@ -17,35 +17,11 @@ namespace TeamFiltration.Handlers
         private static GlobalArgumentsHandler _globalProperties { get; set; }
         private static DatabaseHandler _databaseHandler { get; set; }
         private static BasicAWSCredentials _basicAWSCredentials { get; set; }
-        private Amazon.RegionEndpoint GetAwsRegionEndpoint(string region)
-        {
-            string[] regionsArray = { "us-east-1", "us-west-1", "us-west-2", "ca-central-1", "eu-central-1", "eu-west-1", "eu-west-2", "eu-west-3", "eu-north-1" };
-
-            if (region.Equals(regionsArray[0]))
-                return Amazon.RegionEndpoint.USEast1;
-            else if (region.Equals(regionsArray[1]))
-                return Amazon.RegionEndpoint.USWest1;
-            else if (region.Equals(regionsArray[2]))
-                return Amazon.RegionEndpoint.USWest2;
-            else if (region.Equals(regionsArray[3]))
-                return Amazon.RegionEndpoint.CACentral1;
-            else if (region.Equals(regionsArray[4]))
-                return Amazon.RegionEndpoint.EUCentral1;
-            else if (region.Equals(regionsArray[5]))
-                return Amazon.RegionEndpoint.EUWest1;
-            else if (region.Equals(regionsArray[6]))
-                return Amazon.RegionEndpoint.EUWest2;
-            else if (region.Equals(regionsArray[7]))
-                return Amazon.RegionEndpoint.EUWest3;
-            else if (region.Equals(regionsArray[8]))
-                return Amazon.RegionEndpoint.EUNorth1;
-            else
-                return Amazon.RegionEndpoint.USEast1;
-        }
+      
 
         public async Task<bool> DeleteFireProxEndpoint(string fireProxId, string region)
         {
-            var amazonAPIGatewayClient = new AmazonAPIGatewayClient(_basicAWSCredentials, GetAwsRegionEndpoint(region));
+            var amazonAPIGatewayClient = new AmazonAPIGatewayClient(_basicAWSCredentials, Amazon.RegionEndpoint.GetBySystemName(region));
 
             Amazon.APIGateway.Model.DeleteRestApiResponse deleteRestApiResponse = await amazonAPIGatewayClient.DeleteRestApiAsync(new Amazon.APIGateway.Model.DeleteRestApiRequest() { RestApiId = fireProxId });
 
@@ -64,11 +40,10 @@ namespace TeamFiltration.Handlers
 
         public async Task ListFireProxEndpoint()
         {
-            string[] regionsArray = { "us-east-1", "us-west-1", "us-west-2", "ca-central-1", "eu-central-1", "eu-west-1", "eu-west-2", "eu-west-3", "eu-north-1" };
-
-            foreach (var item in regionsArray)
+            
+            foreach (var item in _globalProperties.AWSRegions)
             {
-                var amazonAPIGatewayClient = new AmazonAPIGatewayClient(_basicAWSCredentials, GetAwsRegionEndpoint(item));
+                var amazonAPIGatewayClient = new AmazonAPIGatewayClient(_basicAWSCredentials, Amazon.RegionEndpoint.GetBySystemName(item));
 
                 Amazon.APIGateway.Model.GetRestApisResponse getRestApisResponse = await amazonAPIGatewayClient.GetRestApisAsync(new Amazon.APIGateway.Model.GetRestApisRequest() { });
             }
@@ -78,7 +53,7 @@ namespace TeamFiltration.Handlers
         }
         public async Task<(Amazon.APIGateway.Model.CreateDeploymentRequest, Models.AWS.FireProxEndpoint)> CreateFireProxEndPoint(string url, string title, string region)
         {
-            var amazonAPIGatewayClient = new AmazonAPIGatewayClient(_basicAWSCredentials, GetAwsRegionEndpoint(region));
+            var amazonAPIGatewayClient = new AmazonAPIGatewayClient(_basicAWSCredentials, Amazon.RegionEndpoint.GetBySystemName(region));
 
             if (url.EndsWith('/'))
                 url = url.Substring(0, url.Length - 1);
@@ -230,14 +205,10 @@ namespace TeamFiltration.Handlers
             if (!string.IsNullOrEmpty(AWSAccessKey) && !string.IsNullOrEmpty(AWSSecretKey))
             {
 
-                AmazonAPIGatewayConfig amazonAPIGatewayConfig = new AmazonAPIGatewayConfig();
-
                 _basicAWSCredentials = new BasicAWSCredentials(
                     AWSAccessKey,
                     AWSSecretKey
                     );
-
-
             }
 
         }

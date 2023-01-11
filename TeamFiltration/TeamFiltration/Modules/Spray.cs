@@ -523,7 +523,7 @@ namespace TeamFiltration.Modules
                     },
                       maxDegreeOfParallelism: 500);
 
-                    if (_globalProperties.GetRegions().Length - 1 == regionCounter)
+                    if (_globalProperties.AWSRegions.Length - 1 == regionCounter)
                         regionCounter = 0;
                     else
                         regionCounter++;

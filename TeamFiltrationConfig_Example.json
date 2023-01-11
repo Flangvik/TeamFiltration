@@ -8,5 +8,7 @@
     "dehashedApiKey": "", 
     "sacrificialO365Username": "sacrificial@domain.org", 
     "sacrificialO365Passwords": "MySacrificialPassword123!" ,  
-    "proxyEndpoint": "http://127.0.0.1:8080" 
+    "proxyEndpoint": "http://127.0.0.1:8080",
+    "AWSAccessKey": "",
+    "AWSSecretKey": ""
   }

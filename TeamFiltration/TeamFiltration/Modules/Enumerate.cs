@@ -412,7 +412,7 @@ namespace TeamFiltration.Modules
 
                             _databaseHandle.WriteLog(new Log("ENUM", $"Loaded {userListData.Count()} usernames", ""));
 
-                            var enumUserUrl = _globalProperties.GetFireProxURLObject("https://teams.microsoft.com/api/mt/", (new Random()).Next(0, _globalProperties.GetRegions().Length));
+                            var enumUserUrl = _globalProperties.GetFireProxURLObject("https://teams.microsoft.com/api/mt/", (new Random()).Next(0, _globalProperties.AWSRegions.Length));
 
                             //Perfom an sanity check to make sure we can validate anything for this tenant at all
 
