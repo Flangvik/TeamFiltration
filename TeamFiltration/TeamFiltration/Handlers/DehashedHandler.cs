@@ -27,7 +27,7 @@ namespace TeamFiltration.Handlers
             // This is for debug , eg burp
             var proxy = new WebProxy
             {
-                Address = new Uri($"http://127.0.0.1:8080"),
+                Address = new Uri(_teamFiltrationConfig.TeamFiltrationConfig.proxyEndpoint),
                 BypassProxyOnLocal = false,
                 UseDefaultCredentials = false,
 

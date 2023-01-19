@@ -38,7 +38,7 @@ namespace TeamFiltration.Handlers
             // This is for debug , eg burp
             var proxy = new WebProxy
             {
-                Address = new Uri($"http://127.0.0.1:8080"),
+                Address = new Uri(teamFiltrationConfig.TeamFiltrationConfig.proxyEndpoint),
                 BypassProxyOnLocal = false,
                 UseDefaultCredentials = false,
 
@@ -92,7 +92,7 @@ namespace TeamFiltration.Handlers
 
 
             refreshClient.DefaultRequestHeaders.Add("Accept", "application/json");
-            refreshClient.DefaultRequestHeaders.Add("User-Agent", "Dalvik/2.1.0 (Linux; U; Android 7.1.2; SM-G955F Build/NRD90M)");
+            refreshClient.DefaultRequestHeaders.Add("User-Agent", _teamFiltrationConfig.TeamFiltrationConfig.userAgent);
 
             var httpResp = await refreshClient.PostAsync(_teamFiltrationConfig.GetBaseUrl(), loginPostBody);
             var contentResp = await httpResp.Content.ReadAsStringAsync();

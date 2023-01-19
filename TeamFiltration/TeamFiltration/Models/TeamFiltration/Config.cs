@@ -37,5 +37,10 @@ namespace TeamFiltration.Models.TeamFiltration
 
         public string proxyEndpoint { get; set; }
 
+        /*
+            Default user agent to be used for all requests
+        */
+        public string userAgent { get; set; } 
+
     }
 }
