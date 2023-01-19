@@ -17,7 +17,7 @@ namespace TeamFiltration.Handlers
         private static GlobalArgumentsHandler _globalProperties { get; set; }
         private static DatabaseHandler _databaseHandler { get; set; }
         private static BasicAWSCredentials _basicAWSCredentials { get; set; }
-      
+
 
         public async Task<bool> DeleteFireProxEndpoint(string fireProxId, string region)
         {
@@ -38,6 +38,7 @@ namespace TeamFiltration.Handlers
             return false;
         }
 
+        /*
         public async Task ListFireProxEndpoint()
         {
             
@@ -47,10 +48,8 @@ namespace TeamFiltration.Handlers
 
                 Amazon.APIGateway.Model.GetRestApisResponse getRestApisResponse = await amazonAPIGatewayClient.GetRestApisAsync(new Amazon.APIGateway.Model.GetRestApisRequest() { });
             }
-
-
-
         }
+        */
         public async Task<(Amazon.APIGateway.Model.CreateDeploymentRequest, Models.AWS.FireProxEndpoint)> CreateFireProxEndPoint(string url, string title, string region)
         {
             var amazonAPIGatewayClient = new AmazonAPIGatewayClient(_basicAWSCredentials, Amazon.RegionEndpoint.GetBySystemName(region));

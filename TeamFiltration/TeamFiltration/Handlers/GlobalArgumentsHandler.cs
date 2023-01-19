@@ -78,8 +78,8 @@ namespace TeamFiltration.Handlers
             DeleteFireProx = args.Contains("--delete-fireprox");
 
             // Set default user agent if missing
-            if (string.IsNullOrEmpty(TeamFiltrationConfig?.userAgent))
-                TeamFiltrationConfig.userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Teams/1.3.00.30866 Chrome/80.0.3987.165 Electron/8.5.1 Safari/537.36";
+            if (string.IsNullOrEmpty(TeamFiltrationConfig?.UserAgent))
+                TeamFiltrationConfig.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Teams/1.3.00.30866 Chrome/80.0.3987.165 Electron/8.5.1 Safari/537.36";
 
             try
             {
@@ -139,6 +139,7 @@ namespace TeamFiltration.Handlers
 
 
         }
+        /*
         public string GetFireProxURL(string url, int regionCounter)
         {
 
@@ -159,7 +160,7 @@ namespace TeamFiltration.Handlers
 
 
         }
-
+        */
         private string EnsurePathChar(string outPutPath)
         {
             foreach (var invalidChar in Path.GetInvalidPathChars())

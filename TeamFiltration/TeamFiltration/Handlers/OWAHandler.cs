@@ -92,7 +92,7 @@ namespace TeamFiltration.Handlers
 
 
             refreshClient.DefaultRequestHeaders.Add("Accept", "application/json");
-            refreshClient.DefaultRequestHeaders.Add("User-Agent", _teamFiltrationConfig.TeamFiltrationConfig.userAgent);
+            refreshClient.DefaultRequestHeaders.Add("User-Agent", _teamFiltrationConfig.TeamFiltrationConfig.UserAgent);
 
             var httpResp = await refreshClient.PostAsync(_teamFiltrationConfig.GetBaseUrl(), loginPostBody);
             var contentResp = await httpResp.Content.ReadAsStringAsync();

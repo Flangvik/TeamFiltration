@@ -43,7 +43,7 @@ namespace TeamFiltration.Models.TeamFiltration
         /*
             Default user agent to be used for all requests
         */
-        public string userAgent { get; set; } 
+        public string UserAgent { get; set; } 
 
     }
 }

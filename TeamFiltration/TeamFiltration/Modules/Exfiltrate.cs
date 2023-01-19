@@ -151,9 +151,9 @@ namespace TeamFiltration.Modules
         {
             _databaseHandler = new DatabaseHandler(args);
 
-            _globalProperties = new GlobalArgumentsHandler(args,_databaseHandler);
+            _globalProperties = new GlobalArgumentsHandler(args, _databaseHandler);
 
-           
+
 
             MSOLHandler msolHandler = new MSOLHandler(_globalProperties, "EXFIL", _databaseHandler);
 
@@ -360,7 +360,7 @@ namespace TeamFiltration.Modules
                 return validResList.FirstOrDefault();
             }
         }
-  
+
         private static async Task PrepareExfilCreds(string username, string password, ExifilOptions exfilOptions, MSOLHandler msolHandler)
         {
 
@@ -492,7 +492,7 @@ namespace TeamFiltration.Modules
             var username = Helpers.Generic.GetUsername(teamsToken.access_token);
 
             var teamsHandler = new TeamsHandler(teamsToken, _globalProperties);
-         
+
             _databaseHandler.WriteLog(new Log("EXFIL", $"Exfiltrating recently used contacts", "") { }, true);
             var contactListLogsOutPath = Path.Combine(outpath, "Contactlist");
             Directory.CreateDirectory(contactListLogsOutPath);
@@ -503,7 +503,10 @@ namespace TeamFiltration.Modules
             if (true)//if (oneDriveHandler != null)
             {
                 //We need a skype token to get other stuff
-                await teamsHandler.SetSkypeToken();
+                var getSkypeToken = await teamsHandler.SetSkypeToken();
+                if (getSkypeToken.Item2 != null)
+                    _databaseHandler.WriteLog(new Log("ENUM", $"Error getting Skype token: {getSkypeToken.Item2.message}", ""));
+
 
                 _databaseHandler.WriteLog(new Log("EXFIL", $"Exfiltrating all sent attachments from chat logs", "") { }, true);
 
@@ -822,7 +825,7 @@ namespace TeamFiltration.Modules
                             try
                             {
                                 var userName = (string.IsNullOrEmpty(user.userPrincipalName)) ? user.mail : user.userPrincipalName;
-                            
+
                                 if (!string.IsNullOrEmpty(userName))
                                     userGroupRelations.AppendLine($"{user.userPrincipalName}:{groupObject.onPremisesSamAccountName}");
                             }
@@ -1048,7 +1051,7 @@ namespace TeamFiltration.Modules
             {
                 await OWAExfilAsync(anyToken, baseUserOutPath);
 
-               // File.WriteAllText(Path.Combine(outlookOutPath, "Emails.json"), JsonConvert.SerializeObject(allEmails, Formatting.Indented));
+                // File.WriteAllText(Path.Combine(outlookOutPath, "Emails.json"), JsonConvert.SerializeObject(allEmails, Formatting.Indented));
             }
 
             /*

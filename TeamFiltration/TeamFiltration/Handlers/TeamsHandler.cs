@@ -61,7 +61,7 @@ namespace TeamFiltration.Handlers
             teamsClient.DefaultRequestHeaders.Add("x-client-SKU", "MSAL.Android");
             teamsClient.DefaultRequestHeaders.Add("x-app-name", "com.microsoft.teams");
             */
-            _teamsClient.DefaultRequestHeaders.Add("User-Agent", teamFiltrationConfig.TeamFiltrationConfig.userAgent);
+            _teamsClient.DefaultRequestHeaders.Add("User-Agent", teamFiltrationConfig.TeamFiltrationConfig.UserAgent);
             _teamsClient.DefaultRequestHeaders.Add("x-ms-client-caller", "x-ms-client-caller");
             _teamsClient.DefaultRequestHeaders.Add("x-ms-client-version", "27/1.0.0.2021011237");
             _teamsClient.DefaultRequestHeaders.Add("Referer", "https://teams.microsoft.com/_");
@@ -105,20 +105,28 @@ namespace TeamFiltration.Handlers
 
 
 
-        public async Task<SkypeTokenResp> SetSkypeToken()
+        public async Task<(SkypeTokenResp, SkypeErrorRespons)> SetSkypeToken()
         {
 
             var getSkypeTokenUrl = "https://authsvc.teams.microsoft.com/v1.0/authz";
             var getSkypeTokenReq = await _teamsClient.PollyPostAsync(getSkypeTokenUrl, null);
             //var getSkypeTokenReq = await _teamsClient.PostAsync(getSkypeTokenUrl, null);
             var getSkypeTokenResp = await getSkypeTokenReq.Content.ReadAsStringAsync();
-            var getSkypeTokenDataResp = JsonConvert.DeserializeObject<SkypeTokenResp>(getSkypeTokenResp);
 
-            _teamsClient.DefaultRequestHeaders.Add("Authentication", "skypetoken=" + getSkypeTokenDataResp.tokens.skypeToken);
-            _teamsClient.DefaultRequestHeaders.Add("X-Skypetoken", getSkypeTokenDataResp.tokens.skypeToken);
+            if (getSkypeTokenReq.IsSuccessStatusCode)
+            {
+                var getSkypeTokenDataResp = JsonConvert.DeserializeObject<SkypeTokenResp>(getSkypeTokenResp);
 
-            return getSkypeTokenDataResp;
+                _teamsClient.DefaultRequestHeaders.Add("Authentication", "skypetoken=" + getSkypeTokenDataResp.tokens.skypeToken);
+                _teamsClient.DefaultRequestHeaders.Add("X-Skypetoken", getSkypeTokenDataResp.tokens.skypeToken);
 
+                return (getSkypeTokenDataResp, null);
+            }
+            else
+            {
+                var getSkypeErrorResp = JsonConvert.DeserializeObject<SkypeErrorRespons>(getSkypeTokenResp);
+                return (null, getSkypeErrorResp);
+            }
 
         }
 

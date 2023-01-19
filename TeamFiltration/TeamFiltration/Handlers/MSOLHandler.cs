@@ -104,7 +104,7 @@ namespace TeamFiltration.Handlers
     </s:Body>
 </s:Envelope>";
 
-                client.DefaultRequestHeaders.Add("User-Agent", _globalProperties.TeamFiltrationConfig.userAgent);
+                client.DefaultRequestHeaders.Add("User-Agent", _globalProperties.TeamFiltrationConfig.UserAgent);
                
 
                 var xmlBody = new StringContent(xmlData, Encoding.UTF8, "text/xml");
@@ -160,7 +160,7 @@ namespace TeamFiltration.Handlers
                 var adfsURL = new Uri(userRealmResp.ThirdPartyAuthUrl.Split("?")[0]);
 
                 //client.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,''image/webp,; q = 0.8'");
-                client.DefaultRequestHeaders.Add("User-Agent", _globalProperties.TeamFiltrationConfig.userAgent);
+                client.DefaultRequestHeaders.Add("User-Agent", _globalProperties.TeamFiltrationConfig.UserAgent);
 
                 var adfsUrl = $"https://{adfsURL.Host}/adfs/ls/?wfresh=0&wauth=http%3a%2f%2fschemas.microsoft.com%2fws%2f2008%2f06%2fidentity%2fauthenticationmethod%2fpassword&cxhflow=TB&cxhplatformversion=10.0.17763&client-request-id={Guid.NewGuid().ToString()}&username={HttpUtility.UrlEncode(sprayAttempts.Username)}&wa=wsignin1.0&wtrealm=urn%3afederation%3aMicrosoftOnline";
 
@@ -202,7 +202,7 @@ namespace TeamFiltration.Handlers
                 new KeyValuePair<string, string>("scope", "openid")  });
 
                 client.DefaultRequestHeaders.Add("Accept", "application/json");
-                client.DefaultRequestHeaders.Add("User-Agent", _globalProperties.TeamFiltrationConfig.userAgent);
+                client.DefaultRequestHeaders.Add("User-Agent", _globalProperties.TeamFiltrationConfig.UserAgent);
 
 
                 HttpResponseMessage httpResp = await client.PostAsync(sprayAttempts.FireProxURL, loginPostBody);
@@ -248,7 +248,7 @@ namespace TeamFiltration.Handlers
 
             client.DefaultRequestHeaders.Add("Cookie", cookieData);
             client.DefaultRequestHeaders.Add("Accept", "application/json");
-            client.DefaultRequestHeaders.Add("User-Agent", _globalProperties.TeamFiltrationConfig.userAgent);
+            client.DefaultRequestHeaders.Add("User-Agent", _globalProperties.TeamFiltrationConfig.UserAgent);
 
             var url = baseUrl + "/" + tenantId + "/oauth2/v2.0/authorize?response_type=token&grant_type=authorization_code&scope=" + "https://" + new Uri(targetResource).Host + "//.default openid profile&client_id=" + clientId + "&redirect_uri=https://teams.microsoft.com/go&client_info=1&claims={\"access_token\":{\"xms_cc\":{\"values\":[\"CP1\"]}}}&client-request-id=" + Guid.NewGuid().ToString() + "&windows_api_version=2.0";
            
@@ -363,7 +363,7 @@ namespace TeamFiltration.Handlers
 
 
             client.DefaultRequestHeaders.Add("Accept", "application/json");
-            client.DefaultRequestHeaders.Add("User-Agent", _globalProperties.TeamFiltrationConfig.userAgent);
+            client.DefaultRequestHeaders.Add("User-Agent", _globalProperties.TeamFiltrationConfig.UserAgent);
 
             //Add some error handling here
             var httpResp = await client.PostAsync(url, loginPostBody);
@@ -443,7 +443,7 @@ namespace TeamFiltration.Handlers
             });
 
             client.DefaultRequestHeaders.Add("Accept", "application/json");
-            client.DefaultRequestHeaders.Add("User-Agent", _globalProperties.TeamFiltrationConfig.userAgent);
+            client.DefaultRequestHeaders.Add("User-Agent", _globalProperties.TeamFiltrationConfig.UserAgent);
 
 
             HttpResponseMessage httpResp = await client.PostAsync(url, loginPostBody);
@@ -469,13 +469,13 @@ namespace TeamFiltration.Handlers
             return (tokenResp, errorResp);
         }
 
-        public async Task<bool> ValidateO365Account(string username, bool print = false, bool redo = true)
+        public async Task<bool> ValidateO365Account(string username, string url, bool print = false, bool redo = true)
         {
 
             int redoCount = 0;
 
         Start:
-            var url = _globalProperties.GetBaseUrl().Replace("common/oauth2/token", "common/GetCredentialType");
+          
 
             var proxy = new WebProxy
             {
@@ -612,7 +612,7 @@ namespace TeamFiltration.Handlers
             loginClient.DefaultRequestHeaders.Add("tb-aad-device-family", "3");
             loginClient.DefaultRequestHeaders.Add("Origin", "https://login.microsoftonline.com");
             loginClient.DefaultRequestHeaders.Add("Host", new Uri(baseUrl).Host);
-            loginClient.DefaultRequestHeaders.Add("User-Agent", _globalProperties.TeamFiltrationConfig.userAgent);
+            loginClient.DefaultRequestHeaders.Add("User-Agent", _globalProperties.TeamFiltrationConfig.UserAgent);
 
             //Send the GET req
             HttpResponseMessage oAuthResp = await loginClient.PollyGetAsync(oAuthUrl_Authorize);
