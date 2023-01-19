@@ -47,6 +47,7 @@ namespace TeamFiltration.Modules
         public bool ValidateAccsO365 { get; set; }
         public bool ValidateAccsLogin { get; set; }
         public bool Dehashed { get; set; }
+
     }
 
     class Enumerate
@@ -56,13 +57,13 @@ namespace TeamFiltration.Modules
         public static DatabaseHandler _databaseHandle { get; set; }
         public static List<string> _teamsObjectIds = new List<string>() { };
 
-        public static async Task ValidUserWrapperTeams(TeamsHandler teamsHandler, string username)
+        public static async Task<bool> ValidUserWrapperTeams(TeamsHandler teamsHandler, string username, string enumUserUrl)
         {
             try
             {
 
                 //TODO: Should probably make it so that it does not re-enum invalid accounts
-                var validUser = await teamsHandler.EnumUser(username);
+                var validUser = await teamsHandler.EnumUser(username, enumUserUrl);
 
 
                 if (validUser.isValid && !string.IsNullOrEmpty(validUser.objectId))
@@ -82,12 +83,15 @@ namespace TeamFiltration.Modules
                                 DisplayName = (validUser.responseObject != null) ? validUser.responseObject?.displayName : ""
                             }
 
+
                             );
+                            return true;
                         }
                         catch (Exception ex)
                         {
 
                             //LiteDB needs to fix their crap
+                            return false;
                         }
 
                     }
@@ -103,11 +107,11 @@ namespace TeamFiltration.Modules
                     try
                     {
                         _databaseHandle.WriteValidAcc(new ValidAccount() { Username = username, Id = Helpers.Generic.StringToGUID(username).ToString(), objectId = validUser.objectId });
-
+                        return true;
                     }
                     catch (Exception)
                     {
-
+                        return false;
                         //LiteDB needs to fix their crap
                     }
                 }
@@ -118,11 +122,13 @@ namespace TeamFiltration.Modules
                     //User is not valid, let's note that down
                     _databaseHandle.WriteInvalidAcc(new ValidAccount() { Username = username, Id = Helpers.Generic.StringToGUID(username).ToString(), objectId = validUser.objectId });
                 }*/
+                return false;
             }
             catch (Exception ex)
             {
+                _databaseHandle.WriteLog(new Log("ENUM", $"Failed to enum { username }, error: {ex}", ""));
+                return false;
 
-                Console.WriteLine($"Failed to enum {username}, error: {ex}");
             }
         }
         public static async Task<bool> CheckO365Method(MSOLHandler msolHandler, string domain)
@@ -134,7 +140,7 @@ namespace TeamFiltration.Modules
         public static async Task<bool> ValidUserWrapperLogin(MSOLHandler msolHandler, string username, string tempPassword)
         {
 
-            var fireProxHolder = _globalProperties.GetFireProxURL();
+            var fireProxHolder = _globalProperties.GetFireProxURL("https://login.microsoftonline.com", 0) + "common/oauth2/token";
             var rescHolder = Helpers.Generic.RandomO365Res();
 
             var sprayAttempt = new SprayAttempt()
@@ -193,7 +199,7 @@ namespace TeamFiltration.Modules
 
             }
 
-            _databaseHandle.WriteSprayAttempt(sprayAttempt);
+            _databaseHandle.WriteSprayAttempt(sprayAttempt, _globalProperties);
 
 
             return false;
@@ -220,12 +226,13 @@ namespace TeamFiltration.Modules
         public static async Task EnumerateAsync(string[] args)
         {
 
+            _databaseHandle = new DatabaseHandler(args);
 
-            _globalProperties = new Handlers.GlobalArgumentsHandler(args);
+            _globalProperties = new Handlers.GlobalArgumentsHandler(args, _databaseHandle);
 
             var usernameListPath = args.GetValue("--usernames");
 
-            _databaseHandle = new DatabaseHandler(_globalProperties);
+
 
             var options = new EnumOptions(args);
 
@@ -247,7 +254,7 @@ namespace TeamFiltration.Modules
                     userListData = usernameLines.Select(x => x.Trim().ToLower()).Distinct().ToArray();
                     if (!userListData.FirstOrDefault().Contains("@"))
                     {
-                        Console.WriteLine("[+] The username list provided needs to be in the format username@company.com!");
+                        _databaseHandle.WriteLog(new Log("[+]", $"The username list provided needs to be in the format username@company.com!", ""));
                         Environment.Exit(0);
 
                     }
@@ -255,7 +262,7 @@ namespace TeamFiltration.Modules
                 }
                 else
                 {
-                    Console.WriteLine("[!] Usernames list provided is emtpy!");
+                    _databaseHandle.WriteLog(new Log("[!]", $"Usernames list provided is emtpy!", ""));
                     Environment.Exit(0);
                 }
             }
@@ -378,7 +385,12 @@ namespace TeamFiltration.Modules
 
                         _databaseHandle.WriteLog(new Log("ENUM", $"Enumerating { userListData.Count() } possible accounts, this will take ~{approcTime} minutes", ""));
 
-                        var teamsToken = await msolHandler.LoginAttemptFireProx(_globalProperties.TeamFiltrationConfig.SacrificialO365Username, _globalProperties.TeamFiltrationConfig.SacrificialO365Passwords, _globalProperties.GetFireProxURL(), ("https://api.spaces.skype.com/", "1fec8e78-bce4-4aaf-ab1b-5451cc387264"));
+                        var teamsToken = await msolHandler.LoginAttemptFireProx(
+                            _globalProperties.TeamFiltrationConfig.SacrificialO365Username,
+                            _globalProperties.TeamFiltrationConfig.SacrificialO365Passwords,
+                            _globalProperties.GetBaseUrl(),
+
+                            ("https://api.spaces.skype.com/", "1fec8e78-bce4-4aaf-ab1b-5451cc387264"));
 
                         if (teamsToken.bearerToken != null)
                         {
@@ -399,17 +411,31 @@ namespace TeamFiltration.Modules
                             await teamsHandler.SetSkypeToken();
 
                             _databaseHandle.WriteLog(new Log("ENUM", $"Loaded {userListData.Count()} usernames", ""));
-                            await userListData.ParallelForEachAsync(
-                            async user =>
+
+                            var enumUserUrl = _globalProperties.GetFireProxURLObject("https://teams.microsoft.com/api/mt/", (new Random()).Next(0, _globalProperties.AWSRegions.Length));
+
+                            //Perfom an sanity check to make sure we can validate anything for this tenant at all
+
+                            var sanityCheck = await ValidUserWrapperTeams(teamsHandler, "ThisUserShouldNotExist@" + userListData.FirstOrDefault().Split('@')[1], enumUserUrl.fireProxUrl);
+                            if (sanityCheck == true)
+                            {
+                                _databaseHandle.WriteLog(new Log("ENUM", $"Pre-Enum sanity check failed, cannot enum this tenant!", ""));
+
+                            }
+                            else
                             {
 
+                                await userListData.ParallelForEachAsync(
+                                   async user =>
+                                   {
+                                       await ValidUserWrapperTeams(teamsHandler, user, enumUserUrl.fireProxUrl);
+                                   },
+                                   maxDegreeOfParallelism: 300);
+                            }
 
-                                await ValidUserWrapperTeams(teamsHandler, user);
+                            if (_globalProperties.DeleteFireProx)
+                                await _globalProperties._awsHandler.DeleteFireProxEndpoint(enumUserUrl.Item1.RestApiId, enumUserUrl.Item2.Region);
 
-
-
-                            },
-                            maxDegreeOfParallelism: 300);
                         }
                     }
                     else

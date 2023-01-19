@@ -19,10 +19,9 @@ namespace TeamFiltration.Modules
 
         public static async Task BackdoorAsync(string[] args)
         {
+            _dataBaseHandler = new DatabaseHandler(args);
 
-            var _globalProperties = new GlobalArgumentsHandler(args);
-
-            _dataBaseHandler = new DatabaseHandler(_globalProperties);
+            var _globalProperties = new GlobalArgumentsHandler(args, _dataBaseHandler);
 
             var rootExfilFolder = Path.Combine(_globalProperties.OutPutPath, "Exfiltration");
 

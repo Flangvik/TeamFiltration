@@ -24,7 +24,7 @@ namespace TeamFiltration.Modules
         private static async Task<bool> CheckForAdfs(string email, GlobalArgumentsHandler _globalProperties)
         {
 
-            var url = _globalProperties.GetFireProxURL().Replace("common/oauth2/token", $"getuserrealm.srf?login={email}&xml=1");
+            var url = _globalProperties.GetFireProxURL("https://login.microsoftonline.com", 0) + $"getuserrealm.srf?login={email}&xml=1";
 
             var proxy = new WebProxy
             {
@@ -70,8 +70,8 @@ namespace TeamFiltration.Modules
         {
             var userRealObject = new UserRealmResp() { };
 
-            var url = _globalProperties.GetFireProxURL().Replace("common/oauth2/token", $"getuserrealm.srf?login={email}&xml=1");
-            var UsGovUrl = _globalProperties.TeamFiltrationConfig.MsolFireProxEndpointsUs[0].Replace("common/oauth2/token", $"getuserrealm.srf?login={email}&xml=1");
+            var url = _globalProperties.GetFireProxURL("https://login.microsoftonline.com", 0) + $"getuserrealm.srf?login={email}&xml=1";
+            var UsGovUrl = _globalProperties.GetFireProxURL("https://login.microsoftonline.us", 0) + $"getuserrealm.srf?login={email}&xml=1";
 
             var proxy = new WebProxy
             {
@@ -193,7 +193,7 @@ namespace TeamFiltration.Modules
 
                 }
 
-                _databaseHandler.WriteSprayAttempt(sprayAttempt);
+                _databaseHandler.WriteSprayAttempt(sprayAttempt, teamFiltrationConfig);
             }
             catch (Exception ex)
             {
@@ -263,7 +263,7 @@ namespace TeamFiltration.Modules
 
                                   }
 
-                                  _databaseHandler.WriteSprayAttempt(sprayAttempt);
+                                  _databaseHandler.WriteSprayAttempt(sprayAttempt, teamFiltrationConfig);
                                   Thread.Sleep(delayInSeconds * 1000);
                               }
                               catch (Exception ex)
@@ -301,9 +301,10 @@ namespace TeamFiltration.Modules
 
             string[] excludeList = new string[] { };
 
-            var _globalProperties = new Handlers.GlobalArgumentsHandler(args);
+            var databaseHandle = new DatabaseHandler(args);
 
-            var databaseHandle = new DatabaseHandler(_globalProperties);
+            var _globalProperties = new Handlers.GlobalArgumentsHandler(args, databaseHandle);
+          
 
             //Calcuate time format for spraying to happen
             if (args.Contains("--time-window"))
@@ -409,19 +410,19 @@ namespace TeamFiltration.Modules
                     var nonSprayed = new List<string> { };
                     var sprayed = new List<string> { };
 
-                    var apiIndexCounter = 0;
+                    var regionCounter = 0;
 
                     foreach (var userCombo in File.ReadAllLines(comboListPath)?.Where(x => !string.IsNullOrEmpty(x)))
                     {
                         var randomResource = Helpers.Generic.RandomO365Res();
 
-                        var fireProxUrl = _globalProperties.TeamFiltrationConfig.MsolFireProxEndpoints[apiIndexCounter];
+                        var fireProxUrl = _globalProperties.GetFireProxURL("https://login.microsoftonline.com", regionCounter) + "/common/oauth2/token/";
 
                         if (aadSSO)
-                            fireProxUrl = _globalProperties.TeamFiltrationConfig.AadSSoFireProxEndpoints[apiIndexCounter];
+                            fireProxUrl = _globalProperties.GetFireProxURL("https://autologon.microsoftazuread-sso.com", regionCounter) + "/common/oauth2/token/";
 
                         if (_globalProperties.UsCloud)
-                            fireProxUrl = _globalProperties.TeamFiltrationConfig.MsolFireProxEndpointsUs[apiIndexCounter];
+                            fireProxUrl = _globalProperties.GetFireProxURL("https://login.microsoftonline.us", regionCounter) + "/common/oauth2/token/";
 
                         var sprayBuff = new SprayAttempt()
                         {
@@ -461,7 +462,7 @@ namespace TeamFiltration.Modules
             {
 
                 //Counter to rotate over the FireProx API endspoints
-                var apiIndexCounter = 0;
+                var regionCounter = 0;
 
                 int forceCount = 0;
 
@@ -497,14 +498,13 @@ namespace TeamFiltration.Modules
                         //If this combo does NOT exsits, add it
                         if (!databaseHandle.QueryComboHash(bufferHash))
                         {
-
-                            var fireProxUrl = _globalProperties.TeamFiltrationConfig.MsolFireProxEndpoints[apiIndexCounter];
+                            var fireProxUrl = _globalProperties.GetFireProxURL("https://login.microsoftonline.com", regionCounter) + "/common/oauth2/token/";
 
                             if (aadSSO)
-                                fireProxUrl = _globalProperties.TeamFiltrationConfig.AadSSoFireProxEndpoints[apiIndexCounter];
+                                fireProxUrl = _globalProperties.GetFireProxURL("https://autologon.microsoftazuread-sso.com", regionCounter) + "/common/oauth2/token/";
 
                             if (_globalProperties.UsCloud)
-                                fireProxUrl = _globalProperties.TeamFiltrationConfig.MsolFireProxEndpointsUs[apiIndexCounter];
+                                fireProxUrl = _globalProperties.GetFireProxURL("https://login.microsoftonline.us", regionCounter) + "/common/oauth2/token/";
 
                             listOfSprayAttempts.Add(new SprayAttempt()
                             {
@@ -523,12 +523,10 @@ namespace TeamFiltration.Modules
                     },
                       maxDegreeOfParallelism: 500);
 
-                    if ((_globalProperties.TeamFiltrationConfig.MsolFireProxEndpoints.Count() - 1) == apiIndexCounter)
-                        apiIndexCounter = 0;
-                    else if ((_globalProperties.TeamFiltrationConfig.AadSSoFireProxEndpoints.Count() - 1) == apiIndexCounter)
-                        apiIndexCounter = 0;
+                    if (_globalProperties.AWSRegions.Length - 1 == regionCounter)
+                        regionCounter = 0;
                     else
-                        apiIndexCounter++;
+                        regionCounter++;
 
                     if (listOfSprayAttempts.Count() > 0)
                     {

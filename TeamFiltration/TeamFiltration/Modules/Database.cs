@@ -9,6 +9,8 @@ using System.Text;
 using System.Threading.Tasks;
 using TeamFiltration.Handlers;
 using TeamFiltration.Models.TeamFiltration;
+using TeamFiltration.Helpers;
+using TeamFiltration.Models.AWS;
 
 namespace TeamFiltration.Modules
 {
@@ -53,11 +55,12 @@ namespace TeamFiltration.Modules
 
         public static void DatabaseStart(string[] args)
         {
+            _dataBaseHandler = new DatabaseHandler(args);
 
-            var _globalProperties = new GlobalArgumentsHandler(args);
+            var _globalProperties = new GlobalArgumentsHandler(args, _dataBaseHandler);
 
 
-            _dataBaseHandler = new DatabaseHandler(_globalProperties);
+
 
             Console.WriteLine($"[+] Attempting to load database file {_dataBaseHandler.DatabaseFullPath}");
 
@@ -71,7 +74,7 @@ namespace TeamFiltration.Modules
                     //Hardcoded and rather shitty "interactive" menu
                     Console.WriteLine("[+] Available commands:\n");
 
-                    Console.WriteLine($"    show <emails|creds|attempts|summary>\n    export <emails|creds|attempts|summary> <csv|json> <path>\n    exit");
+                    Console.WriteLine($"    show <emails|creds|attempts|summary|fireprox>\n    export <emails|creds|attempts|summary> <csv|json> <path>\n    exit");
 
                     Console.WriteLine();
                     Console.Write("[?] CMD #> ");
@@ -90,6 +93,9 @@ namespace TeamFiltration.Modules
 
                     if (selection.Contains("attempts"))
                         dataOut = _dataBaseHandler.QueryAllSprayAttempts().Select(x => (object)x).ToList();
+
+                    if (selection.Contains("fireprox"))
+                        dataOut = _dataBaseHandler.QueryAllFireProxEndpoints().Select(x => (object)x).ToList();
 
                     if (selection.Contains("summary"))
                     {
@@ -134,10 +140,10 @@ namespace TeamFiltration.Modules
                                    .Configure(o => o.NumberAlignment = Alignment.Right)
                                    .Write(Format.Alternative);
                             else if (dataOut.FirstOrDefault().GetType().Equals(typeof(ValidAccount)))
-                                    ConsoleTable
-                                    .From<ValidAccount>(dataOut.Select(x => (ValidAccount)x))
-                                    .Configure(o => o.NumberAlignment = Alignment.Right)
-                                    .Write(Format.Alternative);
+                                ConsoleTable
+                                .From<ValidAccount>(dataOut.Select(x => (ValidAccount)x))
+                                .Configure(o => o.NumberAlignment = Alignment.Right)
+                                .Write(Format.Alternative);
                             else if (dataOut.FirstOrDefault().GetType().Equals(typeof(SpraySummary)))
                                 ConsoleTable
                                 .From<SpraySummary>(dataOut.Select(x => (SpraySummary)x))
@@ -146,6 +152,11 @@ namespace TeamFiltration.Modules
                             else if (dataOut.FirstOrDefault().GetType().Equals(typeof(SprayAttempt)))
                                 ConsoleTable
                                 .From<SprayAttempt>(dataOut.Select(x => (SprayAttempt)x))
+                                .Configure(o => o.NumberAlignment = Alignment.Right)
+                                .Write(Format.Alternative);
+                            else if (dataOut.FirstOrDefault().GetType().Equals(typeof(FireProxEndpoint)))
+                                ConsoleTable
+                                .From<FireProxEndpoint>(dataOut.Select(x => (FireProxEndpoint)x))
                                 .Configure(o => o.NumberAlignment = Alignment.Right)
                                 .Write(Format.Alternative);
                         }

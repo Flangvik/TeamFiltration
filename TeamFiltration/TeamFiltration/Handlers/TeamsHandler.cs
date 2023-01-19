@@ -152,16 +152,16 @@ namespace TeamFiltration.Handlers
             return workingWithDataResp;
         }
 
-        public async Task<(bool isValid, string objectId, TeamsExtSearchRep responseObject)> EnumUser(string username)
+        public async Task<(bool isValid, string objectId, TeamsExtSearchRep responseObject)> EnumUser(string username, string enumUserUrl)
         {
 
             int failedCount = 0;
 
         failedResp:
             //TODO:Add logic to select FireProx endpoint based on current location 
-            var enumUserUrl = _globalArgsHandler.TeamFiltrationConfig.TeamsEnumFireProxEndpoints[(new Random()).Next(0, _globalArgsHandler.TeamFiltrationConfig.TeamsEnumFireProxEndpoints.Count())] + $"{TeamsRegion}/beta/users/{username}/externalsearchv3";
-            var enumUserReq = await _teamsClient.PollyGetAsync(enumUserUrl);
-    
+
+            var enumUserReq = await _teamsClient.PollyGetAsync(enumUserUrl + $"{TeamsRegion}/beta/users/{username}/externalsearchv3");
+
 
 
             if (enumUserReq.IsSuccessStatusCode)

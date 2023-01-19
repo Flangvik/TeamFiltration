@@ -17,17 +17,25 @@ namespace TeamFiltration.Handlers
         public string OutPutPath { get; set; }
 
         public Config TeamFiltrationConfig { get; set; }
-
         public bool DebugMode { get; set; }
         public bool UsCloud { get; set; }
         public bool PushoverLocked { get; set; }
         public bool Pushover { get; set; }
+        public bool AWSFireProx { get; set; } = false;
+        public bool DeleteFireProx { get; set; } = false;
         public int OwaLimit { get; set; }
-        public Pushover PushClient { get; set; }
+        private Pushover _pushClient { get; set; }
+        public AWSHandler _awsHandler { get; set; }
+        private DatabaseHandler _databaseHandler { get; set; }
+        public string[] AWSRegions { get; set; } = { "us-east-1", "us-west-1", "us-west-2", "ca-central-1", "eu-central-1", "eu-west-1", "eu-west-2", "eu-west-3", "eu-north-1" };
 
-        public GlobalArgumentsHandler(string[] args, bool exfilModule = false)
+
+
+        public GlobalArgumentsHandler(string[] args, DatabaseHandler databaseHandler, bool exfilModule = false)
         {
             OutPutPath = args.GetValue("--outpath");
+
+            _databaseHandler = databaseHandler;
 
             var teamFiltrationConfigPath = args.GetValue("--config");
             if (string.IsNullOrEmpty(teamFiltrationConfigPath) && File.Exists("TeamFiltrationConfig.json"))
@@ -39,7 +47,7 @@ namespace TeamFiltration.Handlers
                 if (!exfilModule)
                 {
                     Console.WriteLine("[+] Could not find teamfiltration config, provide a config path using  with --config");
-                    return; 
+                    return;
                 }
 
             }
@@ -67,21 +75,7 @@ namespace TeamFiltration.Handlers
             Pushover = args.Contains("--push");
             UsCloud = args.Contains("--us-cloud");
             DebugMode = args.Contains("--debug");
-
-            if (string.IsNullOrEmpty(OutPutPath))
-            {
-                Console.WriteLine("[+] Your are missing the mandatory --outpath argument, please define it!");
-                Environment.Exit(0);
-            }
-            else
-            {
-                if (Path.HasExtension(OutPutPath))
-                {
-                    Console.WriteLine("[+] The --outpath argument is a FOLDER path, not file. Correct it and try again!");
-                    Environment.Exit(0);
-                }
-
-            }
+            DeleteFireProx = args.Contains("--delete-fireprox");
 
             // Set default user agent if missing
             if (string.IsNullOrEmpty(TeamFiltrationConfig?.userAgent))
@@ -90,24 +84,35 @@ namespace TeamFiltration.Handlers
             try
             {
                 if (!string.IsNullOrEmpty(TeamFiltrationConfig?.PushoverUserKey) && !string.IsNullOrEmpty(TeamFiltrationConfig?.PushoverAppKey))
-                    PushClient = new Pushover(TeamFiltrationConfig.PushoverAppKey);
+                    _pushClient = new Pushover(TeamFiltrationConfig.PushoverAppKey);
             }
             catch (Exception ex)
             {
 
                 Console.WriteLine($"[!] Failed to create Pushover client, bad API keys? -> {ex}");
             }
-         
+
+
+            //Do AWS FireProx generation checks
+            if (!string.IsNullOrEmpty(TeamFiltrationConfig?.AWSSecretKey) && !string.IsNullOrEmpty(TeamFiltrationConfig?.AWSAccessKey))
+            {
+                Console.WriteLine("[+] AWS SecretKey and AccessKey found, FireProx endpoint will be automagically created for each spray-rotation");
+                //If have a strong feeling doing it this way might be a crappy idea, but let's try 
+                AWSFireProx = true;
+                _awsHandler = new AWSHandler(this.TeamFiltrationConfig.AWSAccessKey, this.TeamFiltrationConfig.AWSSecretKey, databaseHandler);
+
+            }
+
         }
         public void PushAlert(string title, string message)
         {
-            if (PushClient != null)
+            if (_pushClient != null)
             {
                 if (Pushover || PushoverLocked)
                 {
                     try
                     {
-                        PushResponse response = PushClient.Push(
+                        PushResponse response = _pushClient.Push(
                             title,
                             message,
                             TeamFiltrationConfig.PushoverUserKey
@@ -121,22 +126,40 @@ namespace TeamFiltration.Handlers
             }
 
         }
-
         public string GetBaseUrl(string region = "US")
         {
-
             return "https://login.microsoftonline.com/common/oauth2/token";
         }
 
-        public string GetFireProxURL(string region = "US")
+        public (Amazon.APIGateway.Model.CreateDeploymentRequest, Models.AWS.FireProxEndpoint, string fireProxUrl) GetFireProxURLObject(string url, int regionCounter)
         {
-            
+            var currentRegion = this.AWSRegions[regionCounter];
+            (Amazon.APIGateway.Model.CreateDeploymentRequest, Models.AWS.FireProxEndpoint) awsEndpoint = _awsHandler.CreateFireProxEndPoint(url, "microsoftonlineUSTemp", currentRegion).GetAwaiter().GetResult();
+            return (awsEndpoint.Item1, awsEndpoint.Item2, $"https://{awsEndpoint.Item1.RestApiId}.execute-api.{currentRegion}.amazonaws.com/fireprox/");
 
-            if (UsCloud)
-                return TeamFiltrationConfig.MsolFireProxEndpointsUs.Where(x => x.ToLower().Contains(("." + region + "-").ToLower())).FirstOrDefault();
 
-            return TeamFiltrationConfig.MsolFireProxEndpoints.Where(x => x.ToLower().Contains(("." + region + "-").ToLower())).FirstOrDefault();
         }
+        public string GetFireProxURL(string url, int regionCounter)
+        {
+
+            if (AWSFireProx)
+            {
+                var currentRegion = this.AWSRegions[regionCounter];
+                (Amazon.APIGateway.Model.CreateDeploymentRequest, Models.AWS.FireProxEndpoint) awsEndpoint = _awsHandler.CreateFireProxEndPoint(url, "microsoftonlineUSTemp", currentRegion).GetAwaiter().GetResult();
+                return $"https://{awsEndpoint.Item1.RestApiId}.execute-api.{currentRegion}.amazonaws.com/fireprox/";
+            }
+            else
+            {
+                Console.WriteLine("[+] Missing AWS SecretKey and AccessKey, unable to create needed FireProx endpoint, exiting..");
+                Environment.Exit(0);
+                return "";
+            }
+
+    
+
+
+        }
+
         private string EnsurePathChar(string outPutPath)
         {
             foreach (var invalidChar in Path.GetInvalidPathChars())
