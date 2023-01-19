@@ -1,15 +1,12 @@
 ﻿using LiteDB;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using TeamFiltration.Helpers;
 using TeamFiltration.Models.AWS;
 using TeamFiltration.Models.TeamFiltration;
 using TimeZoneConverter;
-using TeamFiltration.Helpers;
 
 namespace TeamFiltration.Handlers
 {
@@ -102,10 +99,10 @@ namespace TeamFiltration.Handlers
 
         }
 
-        public void DeleteFireProxEndpoint(string fireProxUrl)
+        public void DeleteFireProxEndpoint(string RestApiId)
         {
             var orders = _globalDatabase.GetCollection<FireProxEndpoint>("fireproxendpoints");
-            orders.DeleteMany(x => x.URL.Equals(fireProxUrl));
+            orders.DeleteMany(x => x.RestApiId.ToLower().Equals(RestApiId.ToLower()));
         }
         public void WriteFireProxEndpoint(FireProxEndpoint endpointData)
         {

@@ -29,7 +29,7 @@ namespace TeamFiltration.Handlers
             {
                 _databaseHandler.WriteLog(new Log("FIREPROX", $"Deleted endpoint https://{fireProxId}.execute-api.{region}.amazonaws.com/fireprox/", ""));
 
-                _databaseHandler.DeleteFireProxEndpoint($"https://{fireProxId}.execute-api.{region}.amazonaws.com/fireprox/");
+                _databaseHandler.DeleteFireProxEndpoint(fireProxId);
 
                 return true;
             }
@@ -153,7 +153,7 @@ namespace TeamFiltration.Handlers
           }
         }";
             template = template.Replace("{{url}}", url);
-            template = template.Replace("{{title}}", "fireprox_" + title);
+            template = template.Replace("{{title}}", "teamfiltration_fireprox_" + title);
             template = template.Replace("{{version_date}}", versionDate);
 
             var templateBytes = Encoding.UTF8.GetBytes(template);
@@ -188,7 +188,8 @@ namespace TeamFiltration.Handlers
                 Active = true,
                 URL = url,
                 FireProxURL = $"https://{createDeploymentRequest.RestApiId}.execute-api.{region}.amazonaws.com/fireprox/",
-                Region = region
+                Region = region,
+                RestApiId = createDeploymentRequest.RestApiId
             };
 
             _databaseHandler.WriteFireProxEndpoint(fireproxEndpoint);

@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Nager.PublicSuffix;
+using Newtonsoft.Json;
 using PushoverClient;
 using System;
 using System.Collections.Generic;
@@ -27,12 +28,16 @@ namespace TeamFiltration.Handlers
         private Pushover _pushClient { get; set; }
         public AWSHandler _awsHandler { get; set; }
         private DatabaseHandler _databaseHandler { get; set; }
+        private DomainParser _domainParser { get; set; }
         public string[] AWSRegions { get; set; } = { "us-east-1", "us-west-1", "us-west-2", "ca-central-1", "eu-central-1", "eu-west-1", "eu-west-2", "eu-west-3", "eu-north-1" };
 
 
 
         public GlobalArgumentsHandler(string[] args, DatabaseHandler databaseHandler, bool exfilModule = false)
         {
+
+            _domainParser = new DomainParser(new WebTldRuleProvider());
+
             OutPutPath = args.GetValue("--outpath");
 
             _databaseHandler = databaseHandler;
@@ -134,7 +139,8 @@ namespace TeamFiltration.Handlers
         public (Amazon.APIGateway.Model.CreateDeploymentRequest, Models.AWS.FireProxEndpoint, string fireProxUrl) GetFireProxURLObject(string url, int regionCounter)
         {
             var currentRegion = this.AWSRegions[regionCounter];
-            (Amazon.APIGateway.Model.CreateDeploymentRequest, Models.AWS.FireProxEndpoint) awsEndpoint = _awsHandler.CreateFireProxEndPoint(url, "microsoftonlineUSTemp", currentRegion).GetAwaiter().GetResult();
+            var domainBase = _domainParser.Parse(url);
+            (Amazon.APIGateway.Model.CreateDeploymentRequest, Models.AWS.FireProxEndpoint) awsEndpoint = _awsHandler.CreateFireProxEndPoint(url, domainBase.Domain, currentRegion).GetAwaiter().GetResult();
             return (awsEndpoint.Item1, awsEndpoint.Item2, $"https://{awsEndpoint.Item1.RestApiId}.execute-api.{currentRegion}.amazonaws.com/fireprox/");
 
 

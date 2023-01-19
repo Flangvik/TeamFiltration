@@ -74,7 +74,7 @@ namespace TeamFiltration.Modules
                     //Hardcoded and rather shitty "interactive" menu
                     Console.WriteLine("[+] Available commands:\n");
 
-                    Console.WriteLine($"    show <emails|creds|attempts|summary|fireprox>\n    export <emails|creds|attempts|summary> <csv|json> <path>\n    exit");
+                    Console.WriteLine($"    show <emails|creds|attempts|summary|fireprox>\n    export <emails|creds|attempts|summary> <csv|json> <path>\n    delete <*|fireprox-id> <fireprox-region>\n    exit");
 
                     Console.WriteLine();
                     Console.Write("[?] CMD #> ");
@@ -190,9 +190,33 @@ namespace TeamFiltration.Modules
 
                         File.WriteAllText(outPath, formattedDataOut);
                     }
+                    else if (selection[0].ToLower().Equals("delete"))
+                    {
+                        if (selection[1].ToLower().Equals("*"))
+                        {
+                            //Delete ALL fireprox instances found in the DB
+                            var fireproxEndpoints = _dataBaseHandler.QueryAllFireProxEndpoints().Select(x => x).ToList();
+                            foreach (var fireproxEndpoint in fireproxEndpoints)
+                            {
+                                _globalProperties._awsHandler.DeleteFireProxEndpoint(fireproxEndpoint.RestApiId, fireproxEndpoint.Region).GetAwaiter().GetResult();
+                            }
+
+                        }
+
+                        else if (selection[1].Length == 10)
+                        {
+                            //delete fireprox instance based on ID and region
+                            if (Amazon.RegionEndpoint.GetBySystemName(selection[2]) != null)
+                                _globalProperties._awsHandler.DeleteFireProxEndpoint(selection[1].ToLower(), selection[2]).GetAwaiter().GetResult();
+                            else
+                                Console.WriteLine("[!] Failed to parse region, example: 'delete aabbccddee us-west-1'");
+                        }
+                    }
                     else if (selection[0].ToLower().Equals("exit"))
                     {
-                        Environment.Exit(0);
+
+                      Environment.Exit(0);
+
 
                     }
 
