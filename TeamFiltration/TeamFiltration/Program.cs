@@ -111,7 +111,7 @@ namespace TeamFiltration
 ";
 
             Console.WriteLine(asci);
-            Console.WriteLine("[♥] TeamFiltration V0.3.4.0 PUBLIC, created by @Flangvik at @TrustedSec");
+            Console.WriteLine("[♥] TeamFiltration V3.5.0 PUBLIC, created by @Flangvik at @TrustedSec");
             Console.WriteLine($"[+] Args parsed {string.Join(' ', args)}");
 
 
