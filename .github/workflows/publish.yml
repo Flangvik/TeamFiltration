@@ -70,4 +70,4 @@ jobs:
           files: |
             TeamFiltration-Win-${{ github.ref_name }}.zip
             TeamFiltration-Linux-${{ github.ref_name }}.zip
-            TeamFiltration-Mac-${{ github.ref_name }}-.zip
+            TeamFiltration-Mac-${{ github.ref_name }}.zip
