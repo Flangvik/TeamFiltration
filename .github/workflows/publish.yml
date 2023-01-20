@@ -51,15 +51,15 @@ jobs:
 
       - name: Zip Windows
         if: "! startsWith(github.event_name, 'pull_request')"
-        run: 7z a -tzip -mx9 TeamFiltration-Win-${{ github.ref_name }}-${{ matrix.release.suffix }}.zip $PWD/TeamFiltrationRelease/Windows/TeamFiltration.exe $PWD/*.sh $PWD/*.json
+        run: 7z a -tzip -mx9 TeamFiltration-Win-${{ github.ref_name }}-${{ matrix.release.suffix }}.zip $PWD/TeamFiltrationRelease/Windows/TeamFiltration.exe $PWD/*.json
 
       - name: Zip Linux
         if: "! startsWith(github.event_name, 'pull_request')"
-        run: 7z a -tzip -mx9 TeamFiltration-Linux-${{ github.ref_name }}-${{ matrix.release.suffix }}.zip $PWD/TeamFiltrationRelease/Linux/TeamFiltration $PWD/*.sh $PWD/*.json
+        run: 7z a -tzip -mx9 TeamFiltration-Linux-${{ github.ref_name }}-${{ matrix.release.suffix }}.zip $PWD/TeamFiltrationRelease/Linux/TeamFiltration $PWD/*.json
 
       - name: Zip Mac
         if: "! startsWith(github.event_name, 'pull_request')"
-        run: 7z a -tzip -mx9 TeamFiltration-Mac-${{ github.ref_name }}-${{ matrix.release.suffix }}.zip $PWD/TeamFiltrationRelease/Mac/TeamFiltration $PWD/*.sh $PWD/*.json
+        run: 7z a -tzip -mx9 TeamFiltration-Mac-${{ github.ref_name }}-${{ matrix.release.suffix }}.zip $PWD/TeamFiltrationRelease/Mac/TeamFiltration $PWD/*.json
           
       - name: Upload to Release
         uses: softprops/action-gh-release@v1
