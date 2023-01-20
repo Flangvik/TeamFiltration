@@ -19,7 +19,7 @@ namespace TeamFiltration
             Console.WriteLine("Usage:\n");
             Console.WriteLine("   --outpath     Output path to store database and exfiltrated information (Needed for all modules)\n");
             Console.WriteLine("   --config      Local path to your TeamFiltration.json configuration file, if not provided will load from the current path\n");
-            Console.WriteLine("   --exfil       Load the exfiltration module  \n");
+            Console.WriteLine("   --exfil       Load the exfiltration module\n");
             Console.WriteLine("         --username            Override to target a given username that does not exist in the database");
             Console.WriteLine("         --password            Override to target a given password that does not exist in the database");
             Console.WriteLine("         --token               Parse an analyze a token, perfom exfil from it");
@@ -30,19 +30,19 @@ namespace TeamFiltration
             Console.WriteLine("         --teams-db            Exfiltrate cookies and authentication tokens from an exfiltrated Teams database");
             Console.WriteLine("         --onedrive            Exfiltrate information from OneDrive/SharePoint API (accessible SharePoint files and the users entire OneDrive directory)");
             Console.WriteLine("         --owa                 Exfiltrate information from the Outlook REST API (The last 2k emails, both sent and received) ");
-            Console.WriteLine("               --owa-limit     Set the max amount of emails to exfiltrate, default is 2k.");
-            Console.WriteLine("         --jwt-tokens              Exfiltrate JSON formated JTW-tokens for SSO resources (MsGraph,AdGraph, Outlook, SharePoint, OneDrive, Teams)\n");
+            Console.WriteLine("               --owa-limit          Set the max amount of emails to exfiltrate, default is 2k.");
+            Console.WriteLine("         --jwt-tokens          Exfiltrate JSON formated JTW-tokens for SSO resources (MsGraph,AdGraph, Outlook, SharePoint, OneDrive, Teams)\n");
 
             Console.WriteLine("   --spray       Load the spraying module\n");
             Console.WriteLine("         --aad-sso             Use SecureWorks recent Azure Active Directory password brute-forcing vuln for spraying");
             Console.WriteLine("         --us-cloud            When spraying companies attached to US Tenants (https://login.microsoftonline.us/)");
             Console.WriteLine("         --time-window         Defines a time windows where spraying should accour, in the military time format <12:00-19:00>");
             Console.WriteLine("         --passwords           Path to a list of passwords, common weak-passwords will be generated if not supplied");
-            Console.WriteLine("         --seasons-only        Password generated for spraying will only be based on seasons");
+            Console.WriteLine("         --seasons-only        Password genersated for spraying will only be based on seasons");
             Console.WriteLine("         --months-only         Password generated for spraying will only be based on months");
             Console.WriteLine("         --common-only         Spray with the top 20 most common passwords");
             Console.WriteLine("         --combo               Path to a combolist of username:password");
-            Console.WriteLine("         --exclude              Path to a list of emails to exclude from spraying\n");
+            Console.WriteLine("         --exclude             Path to a list of emails to exclude from spraying\n");
             Console.WriteLine("         --sleep-min           Minimum minutes to sleep between each full rotation of spraying default=60");
             Console.WriteLine("         --sleep-max           Maximum minutes to sleep between each full rotation of spraying default=100");
             Console.WriteLine("         --delay               Delay in seconds between each individual authentication attempt. default=0");
@@ -60,20 +60,20 @@ namespace TeamFiltration
 
             Console.WriteLine("   --backdoor        Loads the interactive backdoor module\n");
             Console.WriteLine("   --database        Loads the interactive database browser module\n");
-            Console.WriteLine("   --debug           Add burp as a proxy on 127.0.0.1:8080\n");
+            Console.WriteLine("   --debug           Proxy all outgoing HTTP requests through the proxy specified in the config\n");
 
             Console.WriteLine("   Examples:\n");
-            Console.WriteLine(@"        --outpath C:\Clients\2021\FooBar\TFOutput --config myCustomConfig.json --spray --sleep-min 120 --sleep-max 200 --push");
-            Console.WriteLine(@"        --outpath C:\Clients\2021\FooBar\TFOutput --config myCustomConfig.json --spray --push-locked --months-only --exclude C:\Clients\2021\FooBar\Exclude_Emails.txt");
-            Console.WriteLine(@"        --outpath C:\Clients\2021\FooBar\TFOutput --config myCustomConfig.json --spray --passwords C:\Clients\2021\FooBar\Generic\Passwords.txt --time-window 13:00-22:00");
-            Console.WriteLine(@"        --outpath C:\Clients\2021\FooBar\TFOutput --config myCustomConfig.json --exfil --all ");
-            Console.WriteLine(@"        --outpath C:\Clients\2021\FooBar\TFOutput --config myCustomConfig.json --exfil --aad  ");
-            Console.WriteLine(@"        --outpath C:\Clients\2021\FooBar\TFOutput --config myCustomConfig.json --exfil --teams --owa --owa-limit 5000");
-            Console.WriteLine(@"        --outpath C:\Clients\2021\FooBar\TFOutput --config myCustomConfig.json --debug --exfil --onedrive");
-            Console.WriteLine(@"        --outpath C:\Clients\2021\FooBar\TFOutput --config myCustomConfig.json --enum --validate-teams");
-            Console.WriteLine(@"        --outpath C:\Clients\2021\FooBar\TFOutput --config myCustomConfig.json --enum --validate-msol --usernames C:\Clients\2021\FooBar\OSINT\Usernames.txt");
-            Console.WriteLine(@"        --outpath C:\Clients\2021\FooBar\TFOutput --config myCustomConfig.json --backdoor");
-            Console.WriteLine(@"        --outpath C:\Clients\2021\FooBar\TFOutput --config myCustomConfig.json --database");
+            Console.WriteLine(@"        --outpath C:\Clients\2023\FooBar\TFOutput --config myCustomConfig.json --spray --sleep-min 120 --sleep-max 200 --push");
+            Console.WriteLine(@"        --outpath C:\Clients\2023\FooBar\TFOutput --config myCustomConfig.json --spray --push-locked --months-only --exclude C:\Clients\2021\FooBar\Exclude_Emails.txt");
+            Console.WriteLine(@"        --outpath C:\Clients\2023\FooBar\TFOutput --config myCustomConfig.json --spray --passwords C:\Clients\2021\FooBar\Generic\Passwords.txt --time-window 13:00-22:00");
+            Console.WriteLine(@"        --outpath C:\Clients\2023\FooBar\TFOutput --config myCustomConfig.json --exfil --all ");
+            Console.WriteLine(@"        --outpath C:\Clients\2023\FooBar\TFOutput --config myCustomConfig.json --exfil --aad  ");
+            Console.WriteLine(@"        --outpath C:\Clients\2023\FooBar\TFOutput --config myCustomConfig.json --exfil --teams --owa --owa-limit 5000");
+            Console.WriteLine(@"        --outpath C:\Clients\2023\FooBar\TFOutput --config myCustomConfig.json --debug --exfil --onedrive");
+            Console.WriteLine(@"        --outpath C:\Clients\2023\FooBar\TFOutput --config myCustomConfig.json --enum --validate-teams");
+            Console.WriteLine(@"        --outpath C:\Clients\2023\FooBar\TFOutput --config myCustomConfig.json --enum --validate-msol --usernames C:\Clients\2021\FooBar\OSINT\Usernames.txt");
+            Console.WriteLine(@"        --outpath C:\Clients\2023\FooBar\TFOutput --config myCustomConfig.json --backdoor");
+            Console.WriteLine(@"        --outpath C:\Clients\2023\FooBar\TFOutput --config myCustomConfig.json --database");
 
             Environment.Exit(1);
 
@@ -111,7 +111,7 @@ namespace TeamFiltration
 ";
 
             Console.WriteLine(asci);
-            Console.WriteLine("[♥] TeamFiltration V0.3.4.0 PUBLIC, created by @Flangvik @TrustedSec");
+            Console.WriteLine("[♥] TeamFiltration V0.3.4.0 PUBLIC, created by @Flangvik at @TrustedSec");
             Console.WriteLine($"[+] Args parsed {string.Join(' ', args)}");
 
 

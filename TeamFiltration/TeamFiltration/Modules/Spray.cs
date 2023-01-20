@@ -462,8 +462,8 @@ namespace TeamFiltration.Modules
 
                     File.WriteAllLines(comboListPath.Replace(".txt", "_extra.txt"), nonSprayed);
 
-                    if (_globalProperties.DeleteFireProx)
-                        await _globalProperties._awsHandler.DeleteFireProxEndpoint(fireProxObject.Item1.RestApiId, fireProxObject.Item2.Region);
+                    
+                    await _globalProperties._awsHandler.DeleteFireProxEndpoint(fireProxObject.Item1.RestApiId, fireProxObject.Item2.Region);
 
                 }
                 else
@@ -541,8 +541,8 @@ namespace TeamFiltration.Modules
                       maxDegreeOfParallelism: 500);
 
 
-                    if (_globalProperties.DeleteFireProx)
-                        await _globalProperties._awsHandler.DeleteFireProxEndpoint(fireProxObject.Item1.RestApiId, fireProxObject.Item2.Region);
+                    
+                    await _globalProperties._awsHandler.DeleteFireProxEndpoint(fireProxObject.Item1.RestApiId, fireProxObject.Item2.Region);
 
 
                     if (_globalProperties.AWSRegions.Length - 1 == regionCounter)

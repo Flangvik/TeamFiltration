@@ -388,8 +388,8 @@ namespace TeamFiltration.Modules
 
                     }
 
-                    if (_globalProperties.DeleteFireProx)
-                        await _globalProperties._awsHandler.DeleteFireProxEndpoint(enumUserUrl.Item1.RestApiId, enumUserUrl.Item2.Region);
+                    
+                    await _globalProperties._awsHandler.DeleteFireProxEndpoint(enumUserUrl.Item1.RestApiId, enumUserUrl.Item2.Region);
                 }
                 else if (options.ValidateAccsTeams)
                 {
@@ -453,8 +453,8 @@ namespace TeamFiltration.Modules
                                    maxDegreeOfParallelism: 300);
                             }
 
-                            if (_globalProperties.DeleteFireProx)
-                                await _globalProperties._awsHandler.DeleteFireProxEndpoint(enumUserUrl.Item1.RestApiId, enumUserUrl.Item2.Region);
+                            
+                            await _globalProperties._awsHandler.DeleteFireProxEndpoint(enumUserUrl.Item1.RestApiId, enumUserUrl.Item2.Region);
 
                         }
                         else
@@ -490,8 +490,8 @@ namespace TeamFiltration.Modules
                         maxDegreeOfParallelism: 100);
 
 
-                    if (_globalProperties.DeleteFireProx)
-                        await _globalProperties._awsHandler.DeleteFireProxEndpoint(enumUserUrl.Item1.RestApiId, enumUserUrl.Item2.Region);
+                    
+                    await _globalProperties._awsHandler.DeleteFireProxEndpoint(enumUserUrl.Item1.RestApiId, enumUserUrl.Item2.Region);
                 }
 
 

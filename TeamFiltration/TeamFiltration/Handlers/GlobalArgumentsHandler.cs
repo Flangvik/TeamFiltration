@@ -23,7 +23,6 @@ namespace TeamFiltration.Handlers
         public bool PushoverLocked { get; set; }
         public bool Pushover { get; set; }
         public bool AWSFireProx { get; set; } = false;
-        public bool DeleteFireProx { get; set; } = false;
         public int OwaLimit { get; set; }
         private Pushover _pushClient { get; set; }
         public AWSHandler _awsHandler { get; set; }
@@ -80,7 +79,7 @@ namespace TeamFiltration.Handlers
             Pushover = args.Contains("--push");
             UsCloud = args.Contains("--us-cloud");
             DebugMode = args.Contains("--debug");
-            DeleteFireProx = args.Contains("--delete-fireprox");
+            
 
             // Set default user agent if missing
             if (string.IsNullOrEmpty(TeamFiltrationConfig?.UserAgent))
