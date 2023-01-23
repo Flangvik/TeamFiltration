@@ -20,6 +20,7 @@ namespace TeamFiltration.Handlers
         public Config TeamFiltrationConfig { get; set; }
         public bool DebugMode { get; set; }
         public bool UsCloud { get; set; }
+        public bool AADSSO { get; set; }
         public bool PushoverLocked { get; set; }
         public bool Pushover { get; set; }
         public bool AWSFireProx { get; set; } = false;
@@ -38,6 +39,7 @@ namespace TeamFiltration.Handlers
             _domainParser = new DomainParser(new WebTldRuleProvider());
 
             OutPutPath = args.GetValue("--outpath");
+            this.AADSSO = args.Contains("--aad-sso");
 
             _databaseHandler = databaseHandler;
 
