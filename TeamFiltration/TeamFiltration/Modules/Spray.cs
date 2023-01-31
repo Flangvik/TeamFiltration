@@ -216,8 +216,8 @@ namespace TeamFiltration.Modules
         }
         private static async Task SprayAttemptWrap(
             List<SprayAttempt> sprayAttempts,
-            GlobalArgumentsHandler teamFiltrationConfig, 
-            DatabaseHandler _databaseHandler, 
+            GlobalArgumentsHandler teamFiltrationConfig,
+            DatabaseHandler _databaseHandler,
             UserRealmResp userRealmResp,
             int delayInSeconds = 0,
             int regionCounter = 0)
@@ -226,21 +226,22 @@ namespace TeamFiltration.Modules
             var _mainMSOLHandler = new MSOLHandler(teamFiltrationConfig, "SPRAY");
             var _checkMSOLHandler = new MSOLHandler(teamFiltrationConfig, "SPRAY");
 
-            (Amazon.APIGateway.Model.CreateDeploymentRequest, Models.AWS.FireProxEndpoint, string fireProxUrl) fireProxObject =
-                   teamFiltrationConfig.GetFireProxURLObject("https://login.microsoftonline.com", regionCounter);
+            (Amazon.APIGateway.Model.CreateDeploymentRequest, Models.AWS.FireProxEndpoint, string fireProxUrl) fireProxObject;
 
             if (teamFiltrationConfig.AADSSO)
                 fireProxObject = teamFiltrationConfig.GetFireProxURLObject("https://autologon.microsoftazuread-sso.com", regionCounter);
 
-            if (teamFiltrationConfig.UsCloud)
+            else if (teamFiltrationConfig.UsCloud)
                 fireProxObject = teamFiltrationConfig.GetFireProxURLObject("https://login.microsoftonline.us", regionCounter);
+            else
+                fireProxObject = teamFiltrationConfig.GetFireProxURLObject("https://login.microsoftonline.com", regionCounter);
 
             await sprayAttempts.ParallelForEachAsync(
                   async sprayAttempt =>
                           {
                               try
                               {
-                                  sprayAttempt.FireProxURL = fireProxObject.fireProxUrl + "/common/oauth2/token/";
+                                  sprayAttempt.FireProxURL = teamFiltrationConfig.AADSSO ? fireProxObject.fireProxUrl : fireProxObject.fireProxUrl + "/common/oauth2/token/";
                                   sprayAttempt.FireProxRegion = fireProxObject.Item2.Region;
 
                                   var loginResp = await _mainMSOLHandler.LoginSprayAttempt(sprayAttempt, userRealmResp);
@@ -307,8 +308,8 @@ namespace TeamFiltration.Modules
         {
             var alertMsg = true;
             var forceBool = args.Contains("--force");
-           
-        
+
+
 
             int sleepInMinutesMax = 100;
             int sleepInMinutesMin = 60;
@@ -329,7 +330,7 @@ namespace TeamFiltration.Modules
             var databaseHandle = new DatabaseHandler(args);
 
             var _globalProperties = new Handlers.GlobalArgumentsHandler(args, databaseHandle);
-          
+
 
             //Calcuate time format for spraying to happen
             if (args.Contains("--time-window"))
@@ -437,15 +438,17 @@ namespace TeamFiltration.Modules
 
                     var regionCounter = 0;
 
+                    (Amazon.APIGateway.Model.CreateDeploymentRequest, Models.AWS.FireProxEndpoint, string fireProxUrl) fireProxObject;
 
-                    (Amazon.APIGateway.Model.CreateDeploymentRequest, Models.AWS.FireProxEndpoint, string fireProxUrl) fireProxObject =
-                        _globalProperties.GetFireProxURLObject("https://login.microsoftonline.com", regionCounter);
 
                     if (_globalProperties.AADSSO)
                         fireProxObject = _globalProperties.GetFireProxURLObject("https://autologon.microsoftazuread-sso.com", regionCounter);
 
-                    if (_globalProperties.UsCloud)
+                    else if (_globalProperties.UsCloud)
                         fireProxObject = _globalProperties.GetFireProxURLObject("https://login.microsoftonline.us", regionCounter);
+                    else
+                        fireProxObject = _globalProperties.GetFireProxURLObject("https://login.microsoftonline.com", regionCounter);
+
 
                     foreach (var userCombo in File.ReadAllLines(comboListPath)?.Where(x => !string.IsNullOrEmpty(x)))
                     {
@@ -457,13 +460,15 @@ namespace TeamFiltration.Modules
 
                             Username = userCombo.Split(":")[0],
                             Password = userCombo.Split(":")[1],
-                            FireProxURL = fireProxObject.fireProxUrl + "/common/oauth2/token/" ,
+                            FireProxURL = _globalProperties.AADSSO ? fireProxObject.fireProxUrl : fireProxObject.fireProxUrl + "/common/oauth2/token/",
                             FireProxRegion = fireProxObject.Item2.Region,
                             ResourceClientId = randomResource.clientId,
                             ResourceUri = randomResource.Uri,
                             AADSSO = _globalProperties.AADSSO,
                             ADFS = getUserRealmResult.Adfs
                         };
+
+
 
 
                         if (!sprayed.Select(x => x.Split(":")[0].ToLower()).Contains(userCombo.Split(":")[0].ToLower()))
@@ -518,7 +523,7 @@ namespace TeamFiltration.Modules
                     }
 
 
-                 
+                    List<string> allCombos = databaseHandle.QueryAllComboHash();
 
                     //Generate those combinations super fast!
                     await bufferuserNameList.ParallelForEachAsync(
@@ -527,13 +532,11 @@ namespace TeamFiltration.Modules
                         //Check if this combo exsists in the DB
                         var randomResource = Helpers.Generic.RandomO365Res();
 
-                        var bufferHash = Helpers.Generic.CreateMD5(userName.ToLower() + ":" + password);
+                        string bufferHash = Helpers.Generic.CreateMD5(userName.ToLower() + ":" + password);
 
                         //If this combo does NOT exsits, add it
-                        if (!databaseHandle.QueryComboHash(bufferHash))
+                        if (!allCombos.Contains(bufferHash))
                         {
-
-
                             listOfSprayAttempts.Add(new SprayAttempt()
                             {
 
@@ -620,7 +623,7 @@ namespace TeamFiltration.Modules
                         }
                         await SprayAttemptWrap(listOfSprayAttempts, _globalProperties, databaseHandle, getUserRealmResult, delayInSeconds, regionCounter);
 
-               
+
 
 
                     }

@@ -234,13 +234,18 @@ namespace TeamFiltration.Handlers
             return orders.FindAll().ToList();
         }
 
+        internal List<string> QueryAllComboHash()
+        {
 
+            var orders = _globalDatabase.GetCollection<SprayAttempt>("sprayattempts");
+            return orders.FindAll().Select(x => x.ComboHash).ToList();
+        }
 
         internal List<SprayAttempt> QuerySprayAttempts(int minutes)
         {
             var timeSearch = DateTime.Now.AddMinutes(-minutes);
             var orders = _globalDatabase.GetCollection<SprayAttempt>("sprayattempts");
-            return orders.Find(x => x.DateTime >= timeSearch && x.AADSSO == false).ToList();
+            return orders.Find(x => x.DateTime >= timeSearch).ToList();
         }
 
 
