@@ -1,4 +1,4 @@
-﻿using Nager.PublicSuffix;
+using Nager.PublicSuffix;
 using Newtonsoft.Json;
 using PushoverClient;
 using System;
@@ -105,7 +105,15 @@ namespace TeamFiltration.Handlers
                 Console.WriteLine("[+] AWS SecretKey and AccessKey found, FireProx endpoint will be automagically created for each spray-rotation");
                 //If have a strong feeling doing it this way might be a crappy idea, but let's try 
                 AWSFireProx = true;
-                _awsHandler = new AWSHandler(this.TeamFiltrationConfig.AWSAccessKey, this.TeamFiltrationConfig.AWSSecretKey, databaseHandler);
+                if (string.IsNullOrEmpty(TeamFiltrationConfig?.AWSSessionKey))
+                {
+                    _awsHandler = new AWSHandler(this.TeamFiltrationConfig.AWSAccessKey, this.TeamFiltrationConfig.AWSSecretKey, databaseHandler);
+                }
+                else
+                {
+                    Console.WriteLine("[+] AWS Session Key found, this will be used to login to AWS");
+                    _awsHandler = new AWSHandler(this.TeamFiltrationConfig.AWSAccessKey, this.TeamFiltrationConfig.AWSSecretKey, this.TeamFiltrationConfig.AWSSessionKey, databaseHandler);
+                }
 
             }
 
