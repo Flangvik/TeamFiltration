@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -39,6 +39,7 @@ namespace TeamFiltration.Models.TeamFiltration
         public string proxyEndpoint { get; set; }
         public string AWSAccessKey { get; set; }
         public string AWSSecretKey { get; set; }
+        public string AWSSessionKey { get; set; }
 
         /*
             Default user agent to be used for all requests
