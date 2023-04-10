@@ -37,7 +37,7 @@ namespace TeamFiltration.Handlers
 
             return false;
         }
-
+        
         /*
         public async Task ListFireProxEndpoint()
         {

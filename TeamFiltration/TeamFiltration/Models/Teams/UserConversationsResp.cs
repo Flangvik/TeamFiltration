@@ -43,6 +43,7 @@ namespace TeamFiltration.Models.Teams
         public DateTime lastimreceivedtime { get; set; }
         public string consumptionhorizon { get; set; }
         public string isemptyconversation { get; set; }
+        public string topic { get; set; }
     }
 
     public class Threadproperties
@@ -54,6 +55,7 @@ namespace TeamFiltration.Models.Teams
         public string version { get; set; }
         public string threadType { get; set; }
         public long rosterVersion { get; set; }
+        public string topic { get; set; }
     }
 
     public class Memberproperties

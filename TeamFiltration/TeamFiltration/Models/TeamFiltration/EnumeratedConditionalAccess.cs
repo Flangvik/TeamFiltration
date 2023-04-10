@@ -12,6 +12,7 @@ namespace TeamFiltration.Models.TeamFiltration
         public DateTime DateTime { get; set; }
         public string ResourceUri { get; set; }
         public string ResourceClientId { get; set; }
+        public string UserAgent { get; set; }
         public string ResponseData { get; set; }
 
     }

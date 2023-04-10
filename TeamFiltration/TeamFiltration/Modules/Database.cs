@@ -11,6 +11,7 @@ using TeamFiltration.Handlers;
 using TeamFiltration.Models.TeamFiltration;
 using TeamFiltration.Helpers;
 using TeamFiltration.Models.AWS;
+using System.Threading;
 
 namespace TeamFiltration.Modules
 {
@@ -192,13 +193,27 @@ namespace TeamFiltration.Modules
                     }
                     else if (selection[0].ToLower().Equals("delete"))
                     {
+                        //Thanks Chris!
+                        if (_globalProperties.TeamFiltrationConfig == null)
+                        {
+                            Console.WriteLine("[!] In order to delete a fireprox endpoint you must provide the configuration file using '--config'");
+                            Environment.Exit(0);
+                        }
+                        if (string.IsNullOrEmpty(_globalProperties.TeamFiltrationConfig?.AWSAccessKey) || string.IsNullOrEmpty(_globalProperties.TeamFiltrationConfig?.AWSSecretKey))
+                        {
+                            Console.WriteLine("[!] Missing AWSAccessKey and/or AWSSecretKey, must be provided in the configuration file using '--config'");
+                            Environment.Exit(0);
+                        }
+
                         if (selection[1].ToLower().Equals("*"))
                         {
                             //Delete ALL fireprox instances found in the DB
                             var fireproxEndpoints = _dataBaseHandler.QueryAllFireProxEndpoints().Select(x => x).ToList();
                             foreach (var fireproxEndpoint in fireproxEndpoints)
                             {
+                                //There must be a way to bul delete endpoints?
                                 _globalProperties._awsHandler.DeleteFireProxEndpoint(fireproxEndpoint.RestApiId, fireproxEndpoint.Region).GetAwaiter().GetResult();
+                                Thread.Sleep(1000);
                             }
 
                         }
@@ -215,7 +230,7 @@ namespace TeamFiltration.Modules
                     else if (selection[0].ToLower().Equals("exit"))
                     {
 
-                      Environment.Exit(0);
+                        Environment.Exit(0);
 
 
                     }

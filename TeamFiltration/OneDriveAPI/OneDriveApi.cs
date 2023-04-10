@@ -2056,6 +2056,8 @@ namespace KoenZomers.OneDrive.Api
             }
         }
 
+
+
         /// <summary>
         /// Instantiates a new HttpClient preconfigured for use. Note that the caller is responsible for disposing this object.
         /// </summary>
@@ -2101,7 +2103,10 @@ namespace KoenZomers.OneDrive.Api
                 }
             }
 
-
+            httpClient.DefaultRequestHeaders.CacheControl = new CacheControlHeaderValue
+            {
+                NoCache = true
+            };
 
             return httpClient;
         }

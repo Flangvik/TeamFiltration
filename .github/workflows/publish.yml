@@ -23,10 +23,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Setup .NET Core
+      - name: Setup .NET 7
         uses: actions/setup-dotnet@v2
         with:
-          dotnet-version: 3.1.x
+          dotnet-version: 7.0.x
 
       - name: Restore Dependencies
         run: dotnet restore $PWD/TeamFiltration/
@@ -43,31 +43,43 @@ jobs:
             VERSION=${{ github.ref_name }}
             dotnet publish $PWD/TeamFiltration/ -c ${{ matrix.release.type }} -r linux-x64 -p:PublishSingleFile=true --self-contained true --output $PWD/TeamFiltrationRelease/Linux/ -p:Version=${VERSION:1}
         
-      - name: Build for Mac
+      - name: Build for Mac Intel
         continue-on-error: true
         run:  |
             VERSION=${{ github.ref_name }}
             dotnet publish $PWD/TeamFiltration/ -c ${{ matrix.release.type }} -r osx-x64 -p:PublishSingleFile=true --self-contained true --output $PWD/TeamFiltrationRelease/Mac/ -p:Version=${VERSION:1}
 
+      - name: Build for Mac ARM
+        continue-on-error: true
+        run:  |
+            VERSION=${{ github.ref_name }}
+            dotnet publish $PWD/TeamFiltration/ -c ${{ matrix.release.type }} -r osx-arm64 -p:PublishSingleFile=true --self-contained true --output $PWD/TeamFiltrationRelease/MacArm/ -p:Version=${VERSION:1}
+
       - name: Zip Windows
         continue-on-error: true
         if: "! startsWith(github.event_name, 'pull_request')"
-        run: 7z a -tzip -mx9 TeamFiltration-Win-${{ github.ref_name }}.zip $PWD/TeamFiltrationRelease/Windows/TeamFiltration.exe $PWD/*.json
+        run: 7z a -tzip -mx9 TeamFiltration-${{ github.ref_name }}-win-x86_64.zip $PWD/TeamFiltrationRelease/Windows/TeamFiltration.exe $PWD/*.json
 
       - name: Zip Linux
         continue-on-error: true
         if: "! startsWith(github.event_name, 'pull_request')"
-        run: 7z a -tzip -mx9 TeamFiltration-Linux-${{ github.ref_name }}.zip $PWD/TeamFiltrationRelease/Linux/TeamFiltration $PWD/*.json
+        run: 7z a -tzip -mx9 TeamFiltration-${{ github.ref_name }}-linux-x86_64$.zip $PWD/TeamFiltrationRelease/Linux/TeamFiltration $PWD/*.json
 
       - name: Zip Mac
         continue-on-error: true
         if: "! startsWith(github.event_name, 'pull_request')"
-        run: 7z a -tzip -mx9 TeamFiltration-Mac-${{ github.ref_name }}.zip $PWD/TeamFiltrationRelease/Mac/TeamFiltration $PWD/*.json
+        run: 7z a -tzip -mx9 TeamFiltration-${{ github.ref_name }}-macOS-x86_64.zip $PWD/TeamFiltrationRelease/Mac/TeamFiltration $PWD/*.json
+
+      - name: Zip Mac ARM
+        continue-on-error: true
+        if: "! startsWith(github.event_name, 'pull_request')"
+        run: 7z a -tzip -mx9 TeamFiltration-${{ github.ref_name }}-macOS-arm64.zip $PWD/TeamFiltrationRelease/MacArm/TeamFiltration $PWD/*.json
           
       - name: Upload to Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            TeamFiltration-Win-${{ github.ref_name }}.zip
-            TeamFiltration-Linux-${{ github.ref_name }}.zip
-            TeamFiltration-Mac-${{ github.ref_name }}.zip
+            TeamFiltration-${{ github.ref_name }}-win-x86_64.zip
+            TeamFiltration-${{ github.ref_name }}-linux-x86_64$.zip
+            TeamFiltration-${{ github.ref_name }}-macOS-x86_64.zip
+            TeamFiltration-${{ github.ref_name }}-macOS-arm64.zip

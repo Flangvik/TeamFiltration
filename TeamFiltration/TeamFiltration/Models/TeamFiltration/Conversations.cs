@@ -15,11 +15,13 @@ namespace TeamFiltration.Models.TeamFiltration
 
 
             this.Id = conversation.id;
+            this.Title = conversation.threadProperties.topic;
             this.chatMessagesArray = chatsLogs.messages.Select(x => (ChatMessages)x).ToList();
 
         }
 
         public string Id { get; set; }
+        public string Title { get; set; }
 
         public List<ChatMessages> chatMessagesArray { get; set; }
     }
@@ -82,6 +84,7 @@ namespace TeamFiltration.Models.TeamFiltration
         public string Type { get; set; }
         public string Content { get; set; }
         public string ContentType { get; set; }
+        public string Title { get; set; }
         public PropertiesSub Properties { get; set; }
         public List<FileData> FileObject { get; set; }
 
@@ -99,7 +102,8 @@ namespace TeamFiltration.Models.TeamFiltration
                 Content = v.content,
                 ContentType = v.contenttype,
                 FileObject = (v.properties?.files != null) ? JsonConvert.DeserializeObject<List<FileData>>(v.properties?.files) : null,
-                Properties = v.properties
+                Properties = v.properties,
+               
 
             };
         }

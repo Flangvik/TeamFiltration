@@ -50,17 +50,7 @@ namespace TeamFiltration.Handlers
 
             _teamsClient = new HttpClient(httpClientHandler);
             _teamsClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {getBearToken.access_token}");
-            /*
-            teamsClient.DefaultRequestHeaders.Add("x-client-current-telemetry", " 2|29,1|,,,,,");
-            teamsClient.DefaultRequestHeaders.Add("x-client-CPU", "x86");
-            teamsClient.DefaultRequestHeaders.Add("x-client-Ver", "2.0.4");
-            teamsClient.DefaultRequestHeaders.Add("x-client-brkrver", "3.3.9");
-            teamsClient.DefaultRequestHeaders.Add("x-client-DM", "SM-G955F");
-            teamsClient.DefaultRequestHeaders.Add("x-client-OS", "25");
-            teamsClient.DefaultRequestHeaders.Add("x-app-ver", "1416/1.0.0.2021012201");
-            teamsClient.DefaultRequestHeaders.Add("x-client-SKU", "MSAL.Android");
-            teamsClient.DefaultRequestHeaders.Add("x-app-name", "com.microsoft.teams");
-            */
+      
             _teamsClient.DefaultRequestHeaders.Add("User-Agent", teamFiltrationConfig.TeamFiltrationConfig.UserAgent);
             _teamsClient.DefaultRequestHeaders.Add("x-ms-client-caller", "x-ms-client-caller");
             _teamsClient.DefaultRequestHeaders.Add("x-ms-client-version", "27/1.0.0.2021011237");
@@ -110,7 +100,6 @@ namespace TeamFiltration.Handlers
 
             var getSkypeTokenUrl = "https://authsvc.teams.microsoft.com/v1.0/authz";
             var getSkypeTokenReq = await _teamsClient.PollyPostAsync(getSkypeTokenUrl, null);
-            //var getSkypeTokenReq = await _teamsClient.PostAsync(getSkypeTokenUrl, null);
             var getSkypeTokenResp = await getSkypeTokenReq.Content.ReadAsStringAsync();
 
             if (getSkypeTokenReq.IsSuccessStatusCode)
@@ -139,15 +128,24 @@ namespace TeamFiltration.Handlers
             return fetchChatLogsDataResp;
         }
 
-        public async Task<UserConversationsResp> GetConversations()
+        public async Task<UserConversationsResp> GetThreads(string meetingId)
         {
-            //TODO: Find the US eq for "no.ng.msg"
-            var getConversationUrl = "https://no.ng.msg.teams.microsoft.com/v1/users/ME/conversations";
+       
+            var getConversationUrl = $"https://{TeamsRegion}.ng.msg.teams.microsoft.com/v1/threads/{meetingId}?view=msnp24Equivalent";
             var getConversationsReq = await _teamsClient.PollyGetAsync(getConversationUrl);
             var getConversationResp = await getConversationsReq.Content.ReadAsStringAsync();
             var getConversationDataResp = JsonConvert.DeserializeObject<UserConversationsResp>(getConversationResp);
+            return getConversationDataResp;
+        }
 
 
+        public async Task<UserConversationsResp> GetConversations()
+        {
+     
+            var getConversationUrl = $"https://{TeamsRegion}.ng.msg.teams.microsoft.com/v1/users/ME/conversations";
+            var getConversationsReq = await _teamsClient.PollyGetAsync(getConversationUrl);
+            var getConversationResp = await getConversationsReq.Content.ReadAsStringAsync();
+            var getConversationDataResp = JsonConvert.DeserializeObject<UserConversationsResp>(getConversationResp);
             return getConversationDataResp;
         }
 

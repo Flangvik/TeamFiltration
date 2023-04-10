@@ -1,6 +1,8 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Text;
+using TeamFiltration.Models.TeamFiltration;
 
 namespace TeamFiltration.Models.MSOL
 {
@@ -19,6 +21,13 @@ namespace TeamFiltration.Models.MSOL
         public int refresh_token_expires_in { get; set; }
         public string foci { get; set; }
         public string id_token { get; set; }
+
+        public static explicit operator BearerTokenResp(PulledTokens v)
+        {
+            if (v != null)
+                return JsonConvert.DeserializeObject<BearerTokenResp>(v.ResponseData);
+            return null;
+        }
     }
 
 }

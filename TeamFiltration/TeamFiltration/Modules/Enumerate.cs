@@ -126,7 +126,7 @@ namespace TeamFiltration.Modules
             }
             catch (Exception ex)
             {
-                _databaseHandle.WriteLog(new Log("ENUM", $"Failed to enum { username }, error: {ex}", ""));
+                _databaseHandle.WriteLog(new Log("ENUM", $"Failed to enum {username}, error: {ex}", ""));
                 return false;
 
             }
@@ -134,8 +134,12 @@ namespace TeamFiltration.Modules
         public static async Task<bool> CheckO365Method(MSOLHandler msolHandler, string domain, string url)
         {
             var randomUsername = Guid.NewGuid().ToString().Replace("-", "") + domain;
-            var validUser = await msolHandler.ValidateO365Account(randomUsername, url, true, false);
-            return validUser;
+
+            var getUserRealmResult = await Helpers.Generic.CheckUserRealm(randomUsername, _globalProperties);
+
+            if (getUserRealmResult.ThirdPartyAuth == false && getUserRealmResult.Adfs == false)
+                return true;
+            return false;
         }
         public static async Task<bool> ValidUserWrapperLogin(MSOLHandler msolHandler, string username, string tempPassword, string fireProxHolder)
         {
@@ -321,10 +325,16 @@ namespace TeamFiltration.Modules
                     Console.Write("[?] Select an email format #> ");
                     var selection = Convert.ToInt32(Console.ReadLine());
                     var userListReq = await httpClient.PollyGetAsync(gitHubDict.GetValueOrDefault(selection));
-                    userListData = (await userListReq.Content.ReadAsStringAsync()).Split("\n").Where(x => !string.IsNullOrEmpty(x)).Select(x => x + $"@{domain}").ToArray();
-                    //  userListData = (await Helpers.Generic.GenerateCombinations()).ToArray();
+                    if (userListReq.IsSuccessStatusCode)
+                    {
+                        var userListContent = await userListReq.Content.ReadAsStringAsync();
+                        userListData = (userListContent).Split("\n").Where(x => !string.IsNullOrEmpty(x)).Select(x => x + $"@{domain}").ToArray();
+                    }else
+                    {
+                        Console.WriteLine("[!] Failed to download statistically-likely-usernames from Github!");
+                        Environment.Exit(0);
+                    }
                 }
-
 
             }
 
@@ -334,53 +344,52 @@ namespace TeamFiltration.Modules
                 {
 
 
-                    var currentValidAccounts = _databaseHandle.QueryValidAccount().Where(a => a != null).Select(x => x?.Username?.ToLower());
-                    var currentInvalidAccounts = _databaseHandle.QueryInvalidAccount().Select(x => x.Username.ToLower());
+                    IEnumerable<string> currentValidAccounts = _databaseHandle.QueryValidAccount().Where(a => a != null).Select(x => x?.Username?.ToLower()).ToList();
+                    IEnumerable<string> currentInvalidAccounts = _databaseHandle.QueryInvalidAccount().Select(x => x.Username.ToLower()).ToList();
 
                     _databaseHandle.WriteLog(new Log("ENUM", $"Filtering out previusly attempted accounts", ""));
 
                     userListData = userListData.Except(currentValidAccounts).ToArray();
                     userListData = userListData.Except(currentInvalidAccounts).ToArray();
+
+                    if(userListData.Count() == 0)
+                    {
+                        _databaseHandle.WriteLog(new Log("ENUM", $"No valid accounts left after filters applied, exiting..", ""));
+                        Environment.Exit(0);
+                    }
                 }
 
                 if (options.ValidateAccsO365)
                 {
-                    var approcTime = (int)Math.Round(TimeSpan.FromSeconds((double)userListData.Count() / 20).TotalMinutes);
+                    var approcTime = (int)Math.Round(TimeSpan.FromSeconds((double)userListData.Count() / 50).TotalMinutes);
 
                     _databaseHandle.WriteLog(new Log("ENUM", $"Warning, this method may give some false positive accounts", ""));
-                    _databaseHandle.WriteLog(new Log("ENUM", $"Enumerating { userListData.Count() } possible accounts, this will take ~{approcTime} minutes", ""));
+                    _databaseHandle.WriteLog(new Log("ENUM", $"Enumerating {userListData.Count()} possible accounts, this will take ~{approcTime} minutes", ""));
 
                     (Amazon.APIGateway.Model.CreateDeploymentRequest, Models.AWS.FireProxEndpoint, string fireProxUrl) enumUserUrl = _globalProperties.GetFireProxURLObject("https://login.microsoftonline.com", (new Random()).Next(0, _globalProperties.AWSRegions.Length));
 
-                    var url = $"https://{enumUserUrl.Item1.RestApiId}.execute-api.{enumUserUrl.Item2.Region}.amazonaws.com/fireprox/common/GetCredentialType";
                     //Check if this options is possible
                     if (!domain.StartsWith("@"))
                     {
                         domain = "@" + domain;
                     }
-                    if ((await CheckO365Method(msolHandler, $"{domain}", url)) == true)
+
+                    string url = $"{enumUserUrl.fireProxUrl}common/GetCredentialType";
+
+                    //This method only works for Tenants were AAD is federating, not adfs or any third party auth
+
+                    if ((await CheckO365Method(msolHandler, $"{domain}", url)))
                     {
+                        await userListData.ParallelForEachAsync(
+                            async user =>
+                            {
+                                await ValidUserWrapperO365(msolHandler, user, url);
 
-                        //  var url = _globalProperties.GetBaseUrl().Replace("common/oauth2/token", "common/GetCredentialType");
+                            }, maxDegreeOfParallelism: 50);
 
 
-                        foreach (var item in Helpers.Generic.SplitList<string>(userListData.ToList(), 20))
-                        {
-                            //Check 20 users
-                            await userListData.ParallelForEachAsync(
-                                async user =>
-                                {
-                                    await ValidUserWrapperO365(msolHandler, user, url);
 
-                                },
-                            maxDegreeOfParallelism: 20);
 
-                            //Test canary
-                            //if (!(await CheckO365Method(msolHandler, $"@{domain}")))
-                            //    Console.WriteLine("Output will be wrong");
-                        }
-
-                       
                     }
                     else
                     {
@@ -388,7 +397,7 @@ namespace TeamFiltration.Modules
 
                     }
 
-                    
+
                     await _globalProperties._awsHandler.DeleteFireProxEndpoint(enumUserUrl.Item1.RestApiId, enumUserUrl.Item2.Region);
                 }
                 else if (options.ValidateAccsTeams)
@@ -397,7 +406,7 @@ namespace TeamFiltration.Modules
                     {
                         var approcTime = (int)Math.Round(TimeSpan.FromSeconds(((double)userListData.Count() / 300)).TotalMinutes);
 
-                        _databaseHandle.WriteLog(new Log("ENUM", $"Enumerating { userListData.Count() } possible accounts, this will take ~{approcTime} minutes", ""));
+                        _databaseHandle.WriteLog(new Log("ENUM", $"Enumerating {userListData.Count()} possible accounts, this will take ~{approcTime} minutes", ""));
 
                         var teamsToken = await msolHandler.LoginAttemptFireProx(
                             _globalProperties.TeamFiltrationConfig.SacrificialO365Username,
@@ -453,7 +462,7 @@ namespace TeamFiltration.Modules
                                    maxDegreeOfParallelism: 300);
                             }
 
-                            
+
                             await _globalProperties._awsHandler.DeleteFireProxEndpoint(enumUserUrl.Item1.RestApiId, enumUserUrl.Item2.Region);
 
                         }
@@ -474,7 +483,7 @@ namespace TeamFiltration.Modules
                     var approxTime = (int)Math.Round(TimeSpan.FromSeconds((userListData.Count() / 100)).TotalMinutes);
                     var tempPw = Helpers.Generic.GenerateWeakPasswords().FirstOrDefault();
                     _databaseHandle.WriteLog(new Log("ENUM", $"Warning, THIS METHOD WILL PRODUCE LOGIN ATTEMPTS AND IF USED FREQUENTLY,MAY LOCKOUT ACCOUNTS!", ""));
-                    _databaseHandle.WriteLog(new Log("ENUM", $"Enumerating { userListData.Count() } accounts with password {tempPw}, this will take ~{approxTime} minutes", ""));
+                    _databaseHandle.WriteLog(new Log("ENUM", $"Enumerating {userListData.Count()} accounts with password {tempPw}, this will take ~{approxTime} minutes", ""));
 
 
                     (Amazon.APIGateway.Model.CreateDeploymentRequest, Models.AWS.FireProxEndpoint, string fireProxUrl) enumUserUrl
@@ -490,7 +499,7 @@ namespace TeamFiltration.Modules
                         maxDegreeOfParallelism: 100);
 
 
-                    
+
                     await _globalProperties._awsHandler.DeleteFireProxEndpoint(enumUserUrl.Item1.RestApiId, enumUserUrl.Item2.Region);
                 }
 
@@ -504,18 +513,7 @@ namespace TeamFiltration.Modules
 
         }
 
-        public static async Task EnumAccountAsync(string username, string password, EnumOptions enumOptions)
-        {
-            var msolHandler = new MSOLHandler(_globalProperties, "ENUM");
-            if (enumOptions.EnumMFA)
-            {
-                var teamsToken = await msolHandler.GetToken(username, password, "https://api.spaces.skype.com", true);
-
-                if (teamsToken?.TokenResp != null)
-                    _databaseHandle.WriteLog(new Log("ENUM", $"Authenticated successfully, no MFA enforced", ""));
 
 
-            }
-        }
     }
 }

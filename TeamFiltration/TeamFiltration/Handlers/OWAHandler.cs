@@ -28,11 +28,13 @@ namespace TeamFiltration.Handlers
         public HttpClient _outlookClient { get; set; }
         public BearerTokenResp _bearerToken { get; set; }
         public GlobalArgumentsHandler _teamFiltrationConfig { get; set; }
+        public DatabaseHandler _databaseHandler { get; set; }
 
 
-        public OWAHandler(BearerTokenResp getBearToken, GlobalArgumentsHandler teamFiltrationConfig)
+        public OWAHandler(BearerTokenResp getBearToken, GlobalArgumentsHandler teamFiltrationConfig, DatabaseHandler databaseHandler)
         {
             _teamFiltrationConfig = teamFiltrationConfig;
+            _databaseHandler = databaseHandler;
             _bearerToken = getBearToken;
 
             // This is for debug , eg burp
@@ -109,6 +111,44 @@ namespace TeamFiltration.Handlers
             return false;
 
         }
+
+        public async Task<EventsResp> GetCalendarEvents()
+        {
+            var getCalendarEventsResq = await _outlookClient.PollyGetAsync($"https://outlook.office.com/api/v2.0/me/events");
+
+
+            if (getCalendarEventsResq.IsSuccessStatusCode)
+            {
+                var getCalendarEventsResp = await getCalendarEventsResq.Content.ReadAsStringAsync();
+                var getCalendarEventsDataResp = JsonConvert.DeserializeObject<EventsResp>(getCalendarEventsResp);
+
+
+
+                bool fetchedAll = false;
+                if (string.IsNullOrEmpty(getCalendarEventsDataResp.odatanextLink))
+                    fetchedAll = true;
+
+
+                int skipValue = 20;
+                while (!fetchedAll)
+                {
+
+                    var getAllEmailsReqNext = await _outlookClient.PollyGetAsync("https://outlook.office.com/api/v2.0/me/events?$top=20&$skip=" + skipValue);
+                    var getAllEmailsRespNext = await getAllEmailsReqNext.Content.ReadAsStringAsync();
+                    var getAllEmailsRespData = JsonConvert.DeserializeObject<EventsResp>(getAllEmailsRespNext);
+                    getCalendarEventsDataResp.value.AddRange(getAllEmailsRespData.value);
+                    getCalendarEventsDataResp.odatanextLink = getAllEmailsRespData.odatanextLink;
+                    skipValue += 20;
+                    if (string.IsNullOrEmpty(getCalendarEventsDataResp.odatanextLink))
+                        fetchedAll = true;
+                }
+                return getCalendarEventsDataResp;
+            }
+
+            return null;
+
+        }
+
         public async Task<EmailResp> GetEmailAttachmentData(string msgId, string attachemntId)
         {
 
@@ -126,10 +166,6 @@ namespace TeamFiltration.Handlers
             var getAttachmentsReq = await _outlookClient.PollyGetAsync($"https://outlook.office.com/api/v2.0/me/messages/{msgid}/attachments?");
             var getAttachmentsResp = await getAttachmentsReq.Content.ReadAsStringAsync();
             var getAttachmentsDataResp = JsonConvert.DeserializeObject<AttachResp>(getAttachmentsResp);
-
-            //TODO: Implement paging for attachments
-            if (!string.IsNullOrEmpty(getAttachmentsDataResp.odatanextLink))
-                Console.WriteLine("COULD HAVE GOTTEN MORE DATA");
 
             return getAttachmentsDataResp;
         }
@@ -178,27 +214,38 @@ namespace TeamFiltration.Handlers
 
             var getAllEmailsReq = await _outlookClient.PollyGetAsync("https://outlook.office.com/api/v2.0/me/messages?$top=500&$select=id");
             var getAllEmailsResp = await getAllEmailsReq.Content.ReadAsStringAsync();
-            var getAllEmailsDataResp = JsonConvert.DeserializeObject<AllEmailsResp>(getAllEmailsResp);
 
-            bool fetchedAll = false;
-            if (string.IsNullOrEmpty(getAllEmailsDataResp.odatanextLink))
-                fetchedAll = true;
-
-
-            int skipValue = 500;
-            while (!fetchedAll)
+            if (getAllEmailsReq.IsSuccessStatusCode)
             {
+                var getAllEmailsDataResp = JsonConvert.DeserializeObject<AllEmailsResp>(getAllEmailsResp);
 
-                var getAllEmailsReqNext = await _outlookClient.PollyGetAsync("https://outlook.office.com/api/v2.0/me/messages?$top=500&$skip=" + skipValue + "&$select=id");
-                var getAllEmailsRespNext = await getAllEmailsReqNext.Content.ReadAsStringAsync();
-                var getAllEmailsRespData = JsonConvert.DeserializeObject<AllEmailsResp>(getAllEmailsRespNext);
-                getAllEmailsDataResp.value.AddRange(getAllEmailsRespData.value);
-                getAllEmailsDataResp.odatanextLink = getAllEmailsRespData.odatanextLink;
-                skipValue += 500;
-                if (string.IsNullOrEmpty(getAllEmailsDataResp.odatanextLink) || getAllEmailsDataResp.value.Count() >= owaMaxLimit)
+                bool fetchedAll = false;
+                if (string.IsNullOrEmpty(getAllEmailsDataResp.odatanextLink))
                     fetchedAll = true;
+
+
+                int skipValue = 500;
+                while (!fetchedAll)
+                {
+
+                    var getAllEmailsReqNext = await _outlookClient.PollyGetAsync("https://outlook.office.com/api/v2.0/me/messages?$top=500&$skip=" + skipValue + "&$select=id");
+                    var getAllEmailsRespNext = await getAllEmailsReqNext.Content.ReadAsStringAsync();
+                    var getAllEmailsRespData = JsonConvert.DeserializeObject<AllEmailsResp>(getAllEmailsRespNext);
+                    getAllEmailsDataResp.value.AddRange(getAllEmailsRespData.value);
+                    getAllEmailsDataResp.odatanextLink = getAllEmailsRespData.odatanextLink;
+                    skipValue += 500;
+                    if (string.IsNullOrEmpty(getAllEmailsDataResp.odatanextLink) || getAllEmailsDataResp.value.Count() >= owaMaxLimit)
+                        fetchedAll = true;
+                }
+                return getAllEmailsDataResp;
             }
-            return getAllEmailsDataResp;
+            else
+            {
+                var errorResp = JsonConvert.DeserializeObject<OWAErrorResponse>(getAllEmailsResp);
+
+                _databaseHandler.WriteLog(new Log("EXFIL", $"Got error code '{errorResp.error.code}' from Outlook API '{errorResp.error.message}'", "") { }, true);
+                return new AllEmailsResp() { value = new List<EmailResp>() { } };
+            }
         }
 
     }

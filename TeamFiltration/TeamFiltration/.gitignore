@@ -51,6 +51,7 @@ TestResult.xml
 nunit-*.xml
 
 # Build Results of an ATL Project
+Properties/
 [Dd]ebugPS/
 [Rr]eleasePS/
 dlldata.c

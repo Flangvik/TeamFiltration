@@ -80,7 +80,6 @@ namespace TeamFiltration.Handlers
                     {
                         _databaseHandler.WriteLog(new Log("EXFIL", "-->" + file.title));
 
-                        //https://XX.sharepoint.com/_api/v2.0/shares/
                         if (file.siteInfo.siteUrl == null)
                         {
                             file.siteInfo.siteUrl = _getBearToken.resource + "/_api/v2.0/shares/u!" + Convert.ToBase64String(Encoding.UTF8.GetBytes(file.objectUrl)).Replace("=", "");

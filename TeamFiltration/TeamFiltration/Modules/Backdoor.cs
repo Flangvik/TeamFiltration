@@ -51,8 +51,8 @@ namespace TeamFiltration.Modules
                 var targetLoginObject = validLogins[intSelection];
 
                 //Pull tokens avaiable
-                var latestPulledToken = _dataBaseHandler.TokenAvailable(targetLoginObject, "https://api.spaces.skype.com");
-                var latestPulledTokenObjet = JsonConvert.DeserializeObject<BearerTokenResp>(latestPulledToken);
+                var latestPulledToken = _dataBaseHandler.TokensAvailable(targetLoginObject);
+                var latestPulledTokenObjet = JsonConvert.DeserializeObject<BearerTokenResp>(latestPulledToken.FirstOrDefault().ResponseData);
 
                 var msGraphToken = await msolHandler.RefreshAttempt(latestPulledTokenObjet, _globalProperties.GetBaseUrl(), "https://graph.microsoft.com", "1fec8e78-bce4-4aaf-ab1b-5451cc387264");
 

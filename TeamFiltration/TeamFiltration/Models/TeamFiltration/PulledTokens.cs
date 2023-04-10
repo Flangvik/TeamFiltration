@@ -4,7 +4,7 @@ using System.Text;
 
 namespace TeamFiltration.Models.TeamFiltration
 {
-    class PulledTokens
+    public class PulledTokens
     {
         public int Id { get; set; }
         public string ResourceUri { get; set; }

@@ -30,6 +30,15 @@ namespace TeamFiltration.Handlers
 
         }
 
+        internal void WriteEnumeratedConditionalAccess(EnumeratedConditionalAccess enumeratedConditionalAccesses)
+        {
+            var collectionLink = _globalDatabase.GetCollection<EnumeratedConditionalAccess>("enumeratedconditionalaccess");
+            collectionLink.EnsureIndex(x => x.Id, true);
+            collectionLink.Upsert(enumeratedConditionalAccesses);
+
+
+        }
+
         internal void WriteEnumeratedConditionalAccess(List<EnumeratedConditionalAccess> enumeratedConditionalAccesses)
         {
             var collectionLink = _globalDatabase.GetCollection<EnumeratedConditionalAccess>("enumeratedconditionalaccess");
@@ -54,6 +63,15 @@ namespace TeamFiltration.Handlers
             var orders = _globalDatabase.GetCollection<ValidAccount>("invalidaccounts");
             return orders.FindAll().ToList();
         }
+
+        public void DeleteValidAcc(string username)
+        {
+            var collectionLink = _globalDatabase.GetCollection<ValidAccount>("validaccounts");
+            collectionLink.DeleteMany(x => x.Username.Equals(username));
+            // _globalDatabase.Checkpoint();
+
+        }
+
         public void WriteValidAcc(ValidAccount inputData)
         {
             var collectionLink = _globalDatabase.GetCollection<ValidAccount>("validaccounts");
@@ -62,39 +80,50 @@ namespace TeamFiltration.Handlers
 
         }
         //UpdateAccount
-        public void UpdateAccount(SprayAttempt inputData)
+        public bool UpdateAccount(SprayAttempt inputData)
         {
             var collectionLink = _globalDatabase.GetCollection<SprayAttempt>("sprayattempts");
-            collectionLink.Update(inputData);
+            var result = collectionLink.Update(inputData);
             _globalDatabase.Checkpoint();
+            return result;
 
         }
-        public string TokenAvailable(SprayAttempt accObject, string resource = "")
+
+        
+        public List<PulledTokens> TokensAvailable(SprayAttempt accObject)
         {
+
+
+            /*
             //If we are looking for a spesific resource
             if (!string.IsNullOrEmpty(resource))
             {
-                var tokenFromResource = this.QueryTokens(accObject.Username, resource);
+                PulledTokens tokenFromResource = this.QueryTokens(accObject.Username, resource);
                 if (Helpers.Generic.IsTokenValid(tokenFromResource?.ResponseData, accObject.DateTime))
-                    return tokenFromResource.ResponseData;
-
+                    returnList.Add(tokenFromResource.ResponseData);
             }
+            */
+            List<PulledTokens> returnList = new List<PulledTokens> { };
 
-            PulledTokens latestPulledToken = this.QueryTokens(accObject);
+            List<PulledTokens> latestPulledToken = this.QueryTokens(accObject);
 
-            var latestValidToken = "";
-
-
-            if (Helpers.Generic.IsTokenValid(accObject.ResponseData, accObject.DateTime))
-                latestValidToken = accObject.ResponseData;
-
-            if (latestPulledToken != null)
+            if (latestPulledToken.Count() > 0)
             {
-                if (Helpers.Generic.IsTokenValid(latestPulledToken?.ResponseData, latestPulledToken.DateTime))
-                    latestValidToken = latestPulledToken.ResponseData;
+                foreach (var item in latestPulledToken)
+                {
+                    if (Helpers.Generic.IsTokenValid(item?.ResponseData, item.DateTime))
+                        returnList.Add(item);
+
+                }
+
             }
 
-            return latestValidToken;
+            /*
+            if (Helpers.Generic.IsTokenValid(accObject.ResponseData, accObject.DateTime))
+                returnList.Add(accObject.);
+            */
+
+            return returnList.ToList();
 
 
         }
@@ -161,9 +190,9 @@ namespace TeamFiltration.Handlers
                     var msgPartTwo = inputLog.Message.Split("=>")[1];
                     var message = msgPartOne.PadRight(60) + "=>" + msgPartTwo;
                     if (WriteLine)
-                        Console.WriteLine($"[{inputLog.Module}] {inputLog.Prefix} { TimeZoneInfo.ConvertTimeFromUtc(inputLog.Timestamp.ToUniversalTime(), easternZone)} EST {message}");
+                        Console.WriteLine($"[{inputLog.Module}] {inputLog.Prefix.PadRight(12)} { TimeZoneInfo.ConvertTimeFromUtc(inputLog.Timestamp.ToUniversalTime(), easternZone)} EST {message}");
                     else
-                        Console.Write($"\r[{inputLog.Module}] {inputLog.Prefix} { TimeZoneInfo.ConvertTimeFromUtc(inputLog.Timestamp.ToUniversalTime(), easternZone)} EST {message}");
+                        Console.Write($"\r[{inputLog.Module}] {inputLog.Prefix.PadRight(12)} { TimeZoneInfo.ConvertTimeFromUtc(inputLog.Timestamp.ToUniversalTime(), easternZone)} EST {message}");
                 }
 
 
@@ -212,7 +241,11 @@ namespace TeamFiltration.Handlers
             return orders.Find(x => x.Valid == true).ToList();
         }
 
-
+        internal SprayAttempt QueryValidLogin(string username)
+        {
+            var orders = _globalDatabase.GetCollection<SprayAttempt>("sprayattempts");
+            return orders.Find(x => x.Valid == true && x.Username.ToLower().Equals(username)).ToList().FirstOrDefault();
+        }
 
         internal bool QueryComboHash(string comboHash)
         {
@@ -233,13 +266,19 @@ namespace TeamFiltration.Handlers
             var orders = _globalDatabase.GetCollection<SprayAttempt>("sprayattempts");
             return orders.FindAll().ToList();
         }
+        internal List<string> QueryAllCombos()
+        {
 
+            var orders = _globalDatabase.GetCollection<SprayAttempt>("sprayattempts");
+            return orders.FindAll().Select(x => x.Username.ToLower() + ":" + x.Password).ToList();
+        }
         internal List<string> QueryAllComboHash()
         {
 
             var orders = _globalDatabase.GetCollection<SprayAttempt>("sprayattempts");
             return orders.FindAll().Select(x => x.ComboHash).ToList();
         }
+
 
         internal List<SprayAttempt> QuerySprayAttempts(int minutes)
         {
@@ -255,16 +294,25 @@ namespace TeamFiltration.Handlers
             return orders.Find(x => x.Password.Equals(password)).ToList();
         }
 
-        internal PulledTokens QueryTokens(string Username, string resource)
+        internal List<PulledTokens> QueryToken(string Username, string resource)
         {
             var pulledTokens = _globalDatabase.GetCollection<PulledTokens>("tokens");
-            return pulledTokens.Find(x => x.Username.ToLower().Equals(Username.ToLower()) && x.ResourceUri.StartsWith(resource)).OrderByDescending(x => x.DateTime).FirstOrDefault();
+            var resourceHost = new Uri(resource).Host;
+            return pulledTokens.Find(x => x.Username.ToLower().Equals(Username.ToLower()) && x.ResourceUri.Contains(resourceHost)).OrderByDescending(x => x.DateTime).ToList();
+        }
+        
+
+        internal bool DeleteToken(PulledTokens token)
+        {
+            var pulledTokens = _globalDatabase.GetCollection<PulledTokens>("tokens");
+            return pulledTokens.Delete(token.Id);
         }
 
-        internal PulledTokens QueryTokens(SprayAttempt account)
+
+        internal List<PulledTokens> QueryTokens(SprayAttempt account)
         {
             var pulledTokens = _globalDatabase.GetCollection<PulledTokens>("tokens");
-            return pulledTokens.Find(x => x.Username.Equals(account.Username)).OrderByDescending(x => x.DateTime).FirstOrDefault();
+            return pulledTokens.Find(x => x.Username.Equals(account.Username)).OrderByDescending(x => x.DateTime).ToList();
         }
 
         internal void WriteToken(PulledTokens account)
