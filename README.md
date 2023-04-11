@@ -5,9 +5,9 @@ See the [TeamFiltration](https://github.com/Flangvik/TeamFiltration/wiki/TeamFil
 This tool has been used internally since January 2021 and was publicly released in my talk "Taking a Dumb In The Cloud" during DefCON30.
 
 ## Download
-[You can download the latest precompiled release for Linux, Windows and MacOSX X64 ](https://github.com/Flangvik/TeamFiltration/releases/latest)   
+[You can download the latest precompiled release for Linux, Windows and MacOS ](https://github.com/Flangvik/TeamFiltration/releases/latest)   
 
-**The releases are precompiled into a single application-dependent binary. The size go up, but you do not need DotNetCore or any other dependencies to run them.**
+**The releases are precompiled into a single application-dependent binary. The size go up, but you do not need NET or any other dependencies to run them.**
 
 ## Usage
 
@@ -40,7 +40,7 @@ This tool has been used internally since January 2021 and was publicly released 
  └╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╝
    ╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝
 
-[] TeamFiltration V3.5.1 PUBLIC, created by @Flangvik at @TrustedSec
+[❤] TeamFiltration V3.5.1 PUBLIC, created by @Flangvik at @TrustedSec
 [+] Args parsed 
 Usage:
 
@@ -125,6 +125,6 @@ Usage:
 - [GitHub - KoenZomers/OneDriveAPI: API in .NET to communicate with OneDrive Personal and OneDrive for Business](https://github.com/KoenZomers/OneDriveAPI)
 - [Research into Undocumented Behavior of Azure AD Refresh Tokens ](https://github.com/secureworks/family-of-client-ids-research) 
 - [WS API Gateway management tool for creating on the fly HTTP pass-through proxies for unique IP rotation](https://github.com/ustayready/fireprox)
-- Credits to [Ryan] (https://twitter.com/detectdotdev) for validating and discussing my observations / questions!
+- Credits to [Ryan](https://twitter.com/detectdotdev) for validating and discussing my observations / questions!
 - The entire [TrustedSec](https://TrustedSec.com) team for helping me polish this tool! 
 

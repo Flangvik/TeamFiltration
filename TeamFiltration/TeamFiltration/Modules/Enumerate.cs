@@ -302,6 +302,7 @@ namespace TeamFiltration.Modules
                 };
 
 
+                startSelection:
                 using (var httpClient = new HttpClient(httpClientHandler))
                 {
                     var gitHubDict = new Dictionary<int, string>() { };
@@ -315,6 +316,7 @@ namespace TeamFiltration.Modules
                     gitHubDict.Add(7, "https://raw.githubusercontent.com/Flangvik/statistically-likely-usernames/master/smith.txt");
                     gitHubDict.Add(8, "https://raw.githubusercontent.com/Flangvik/statistically-likely-usernames/master/smithj.txt");
                     gitHubDict.Add(9, "https://raw.githubusercontent.com/Flangvik/statistically-likely-usernames/master/john_smith.txt");
+                    gitHubDict.Add(10, "https://raw.githubusercontent.com/Flangvik/statistically-likely-usernames/master/j.smith.txt");
 
 
                     foreach (var usernameDict in gitHubDict)
@@ -323,7 +325,19 @@ namespace TeamFiltration.Modules
                     }
                     Console.WriteLine();
                     Console.Write("[?] Select an email format #> ");
-                    var selection = Convert.ToInt32(Console.ReadLine());
+                    int selection = 0;
+                    try
+                    {
+                        selection = Convert.ToInt32(Console.ReadLine());
+                    }
+                    catch (Exception ex)
+                    {
+
+                        Console.WriteLine("[!] Failed to parse input / selection, try again!");
+                        Console.WriteLine("");
+                        goto startSelection;
+                    }
+               
                     var userListReq = await httpClient.PollyGetAsync(gitHubDict.GetValueOrDefault(selection));
                     if (userListReq.IsSuccessStatusCode)
                     {
