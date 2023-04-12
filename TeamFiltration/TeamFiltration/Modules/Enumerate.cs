@@ -71,7 +71,10 @@ namespace TeamFiltration.Modules
                     //check list and add
                     if (!_teamsObjectIds.Contains(validUser.objectId))
                     {
-                        _databaseHandle.WriteLog(new Log("ENUM", $"{username} valid!", ""));
+                        if (validUser.Outofofficenote != null)
+                            _databaseHandle.WriteLog(new Log("ENUM", $"{username} valid (OutOfOffice message found)!", ""));
+                        else
+                            _databaseHandle.WriteLog(new Log("ENUM", $"{username} valid!", ""));
 
                         try
                         {
@@ -80,7 +83,8 @@ namespace TeamFiltration.Modules
                                 Username = username,
                                 Id = Helpers.Generic.StringToGUID(username).ToString(),
                                 objectId = validUser.objectId,
-                                DisplayName = (validUser.responseObject != null) ? validUser.responseObject?.displayName : ""
+                                DisplayName = (validUser.responseObject != null) ? validUser.responseObject?.displayName : "",
+                                OutOfOfficeMessage = (validUser.Outofofficenote != null) ? validUser.Outofofficenote.message : "",
                             }
 
 
@@ -115,13 +119,7 @@ namespace TeamFiltration.Modules
                         //LiteDB needs to fix their crap
                     }
                 }
-                /*
-                 * There is a "bug" in litedb that makes it unable to handle more then 300/s transactions a second
-                else if (!validUser.isValid)
-                {
-                    //User is not valid, let's note that down
-                    _databaseHandle.WriteInvalidAcc(new ValidAccount() { Username = username, Id = Helpers.Generic.StringToGUID(username).ToString(), objectId = validUser.objectId });
-                }*/
+
                 return false;
             }
             catch (Exception ex)
@@ -302,6 +300,7 @@ namespace TeamFiltration.Modules
                 };
 
 
+            startSelection:
                 using (var httpClient = new HttpClient(httpClientHandler))
                 {
                     var gitHubDict = new Dictionary<int, string>() { };
@@ -315,6 +314,7 @@ namespace TeamFiltration.Modules
                     gitHubDict.Add(7, "https://raw.githubusercontent.com/Flangvik/statistically-likely-usernames/master/smith.txt");
                     gitHubDict.Add(8, "https://raw.githubusercontent.com/Flangvik/statistically-likely-usernames/master/smithj.txt");
                     gitHubDict.Add(9, "https://raw.githubusercontent.com/Flangvik/statistically-likely-usernames/master/john_smith.txt");
+                    gitHubDict.Add(10, "https://raw.githubusercontent.com/Flangvik/statistically-likely-usernames/master/j.smith.txt");
 
 
                     foreach (var usernameDict in gitHubDict)
@@ -323,13 +323,26 @@ namespace TeamFiltration.Modules
                     }
                     Console.WriteLine();
                     Console.Write("[?] Select an email format #> ");
-                    var selection = Convert.ToInt32(Console.ReadLine());
+                    int selection = 0;
+                    try
+                    {
+                        selection = Convert.ToInt32(Console.ReadLine());
+                    }
+                    catch (Exception ex)
+                    {
+
+                        Console.WriteLine("[!] Failed to parse input / selection, try again!");
+                        Console.WriteLine("");
+                        goto startSelection;
+                    }
+
                     var userListReq = await httpClient.PollyGetAsync(gitHubDict.GetValueOrDefault(selection));
                     if (userListReq.IsSuccessStatusCode)
                     {
                         var userListContent = await userListReq.Content.ReadAsStringAsync();
                         userListData = (userListContent).Split("\n").Where(x => !string.IsNullOrEmpty(x)).Select(x => x + $"@{domain}").ToArray();
-                    }else
+                    }
+                    else
                     {
                         Console.WriteLine("[!] Failed to download statistically-likely-usernames from Github!");
                         Environment.Exit(0);
@@ -352,7 +365,7 @@ namespace TeamFiltration.Modules
                     userListData = userListData.Except(currentValidAccounts).ToArray();
                     userListData = userListData.Except(currentInvalidAccounts).ToArray();
 
-                    if(userListData.Count() == 0)
+                    if (userListData.Count() == 0)
                     {
                         _databaseHandle.WriteLog(new Log("ENUM", $"No valid accounts left after filters applied, exiting..", ""));
                         Environment.Exit(0);
