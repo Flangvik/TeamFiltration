@@ -50,7 +50,7 @@ namespace TeamFiltration.Handlers
 
             _teamsClient = new HttpClient(httpClientHandler);
             _teamsClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {getBearToken.access_token}");
-      
+
             _teamsClient.DefaultRequestHeaders.Add("User-Agent", teamFiltrationConfig.TeamFiltrationConfig.UserAgent);
             _teamsClient.DefaultRequestHeaders.Add("x-ms-client-caller", "x-ms-client-caller");
             _teamsClient.DefaultRequestHeaders.Add("x-ms-client-version", "27/1.0.0.2021011237");
@@ -130,7 +130,7 @@ namespace TeamFiltration.Handlers
 
         public async Task<UserConversationsResp> GetThreads(string meetingId)
         {
-       
+
             var getConversationUrl = $"https://{TeamsRegion}.ng.msg.teams.microsoft.com/v1/threads/{meetingId}?view=msnp24Equivalent";
             var getConversationsReq = await _teamsClient.PollyGetAsync(getConversationUrl);
             var getConversationResp = await getConversationsReq.Content.ReadAsStringAsync();
@@ -141,7 +141,7 @@ namespace TeamFiltration.Handlers
 
         public async Task<UserConversationsResp> GetConversations()
         {
-     
+
             var getConversationUrl = $"https://{TeamsRegion}.ng.msg.teams.microsoft.com/v1/users/ME/conversations";
             var getConversationsReq = await _teamsClient.PollyGetAsync(getConversationUrl);
             var getConversationResp = await getConversationsReq.Content.ReadAsStringAsync();
@@ -158,16 +158,15 @@ namespace TeamFiltration.Handlers
             return workingWithDataResp;
         }
 
-        public async Task<(bool isValid, string objectId, TeamsExtSearchRep responseObject)> EnumUser(string username, string enumUserUrl)
+        public async Task<(bool isValid, string objectId, TeamsExtSearchRep responseObject, Outofofficenote Outofofficenote)> EnumUser(string username, string enumUserUrl)
         {
-
+            Outofofficenote Outofofficenote = new Outofofficenote() { };
             int failedCount = 0;
 
         failedResp:
             //TODO:Add logic to select FireProx endpoint based on current location 
 
             var enumUserReq = await _teamsClient.PollyGetAsync(enumUserUrl + $"{TeamsRegion}/beta/users/{username}/externalsearchv3");
-
 
 
             if (enumUserReq.IsSuccessStatusCode)
@@ -200,27 +199,54 @@ namespace TeamFiltration.Handlers
                             && responeObject.FirstOrDefault().userPrincipalName.ToLower().Equals(username.ToLower())
                             )
                         {
-                            return (true, responeObject.FirstOrDefault().objectId, responeObject.FirstOrDefault());
+
+                            //Check the user presence
+                            HttpResponseMessage getUserPresence = await _teamsClient.PollyPostAsync(
+                                $"https://presence.teams.microsoft.com/v1/presence/getpresence/",
+
+                                new StringContent(
+                                    "[{ \"mri\":\"" + responeObject.FirstOrDefault().mri + "\"}]"
+                                    , Encoding.UTF8
+                                    , "application/json"
+                                    )
+                                );
+
+                            var getPresenceObject = JsonConvert.DeserializeObject<List<GetPresenceResp>>(await getUserPresence.Content.ReadAsStringAsync());
+
+                            try
+                            {
+                                if (getPresenceObject.FirstOrDefault()?.presence?.calendarData?.isOutOfOffice != null)
+                                {
+                                    Outofofficenote = getPresenceObject.FirstOrDefault()?.presence?.calendarData.outOfOfficeNote;
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+
+
+                            }
+
+                            return (true, responeObject.FirstOrDefault().objectId, responeObject.FirstOrDefault(), Outofofficenote);
                         }
                     }
                 }
-                return (false, "", null);
+                return (false, "", null, null);
 
             }
             else if (enumUserReq.StatusCode.Equals(HttpStatusCode.Forbidden))
             {
                 //If we get the forbidden error response, we can assume it's valid!
-                return (true, Guid.NewGuid().ToString(), null);
+                return (true, Guid.NewGuid().ToString(), null, null);
             }
             else if (enumUserReq.StatusCode.Equals(HttpStatusCode.InternalServerError))
             {
                 failedCount++;
                 if (failedCount > 2)
-                    return (false, "", null);
+                    return (false, "", null, null);
                 else
                     goto failedResp;
             }
-            return (false, "", null);
+            return (false, "", null, null);
 
         }
 

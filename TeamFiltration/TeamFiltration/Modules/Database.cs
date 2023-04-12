@@ -125,7 +125,7 @@ namespace TeamFiltration.Modules
 
                     //Format based on o
                     if (selection.Contains("csv"))
-                        formattedDataOut = ToCsv(",", dataOut);
+                        formattedDataOut = ToCsv(";", dataOut);
 
                     if (selection.Contains("json"))
                         formattedDataOut = JsonConvert.SerializeObject(dataOut, Formatting.Indented);
