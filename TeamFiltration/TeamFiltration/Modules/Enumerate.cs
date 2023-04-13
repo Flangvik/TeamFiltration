@@ -71,7 +71,7 @@ namespace TeamFiltration.Modules
                     //check list and add
                     if (!_teamsObjectIds.Contains(validUser.objectId))
                     {
-                        if (validUser.Outofofficenote != null)
+                        if (!string.IsNullOrEmpty(validUser.Outofofficenote?.message))
                             _databaseHandle.WriteLog(new Log("ENUM", $"{username} valid (OutOfOffice message found)!", ""));
                         else
                             _databaseHandle.WriteLog(new Log("ENUM", $"{username} valid!", ""));
