@@ -200,21 +200,23 @@ namespace TeamFiltration.Handlers
                             )
                         {
 
-                            //Check the user presence
-                            HttpResponseMessage getUserPresence = await _teamsClient.PollyPostAsync(
-                                $"https://presence.teams.microsoft.com/v1/presence/getpresence/",
-
-                                new StringContent(
-                                    "[{ \"mri\":\"" + responeObject.FirstOrDefault().mri + "\"}]"
-                                    , Encoding.UTF8
-                                    , "application/json"
-                                    )
-                                );
-
-                            var getPresenceObject = JsonConvert.DeserializeObject<List<GetPresenceResp>>(await getUserPresence.Content.ReadAsStringAsync());
-
                             try
                             {
+
+                                //Check the user presence
+                                HttpResponseMessage getUserPresence = await _teamsClient.PollyPostAsync(
+                                    $"https://presence.teams.microsoft.com/v1/presence/getpresence/",
+
+                                    new StringContent(
+                                        "[{ \"mri\":\"" + responeObject.FirstOrDefault().mri + "\"}]"
+                                        , Encoding.UTF8
+                                        , "application/json"
+                                        )
+                                    );
+
+
+                                var getPresenceObject = JsonConvert.DeserializeObject<List<GetPresenceResp>>(await getUserPresence.Content.ReadAsStringAsync());
+
                                 if (getPresenceObject.FirstOrDefault()?.presence?.calendarData?.isOutOfOffice != null)
                                 {
                                     Outofofficenote = getPresenceObject.FirstOrDefault()?.presence?.calendarData.outOfOfficeNote;
@@ -223,7 +225,7 @@ namespace TeamFiltration.Handlers
                             catch (Exception ex)
                             {
 
-
+                                
                             }
 
                             return (true, responeObject.FirstOrDefault().objectId, responeObject.FirstOrDefault(), Outofofficenote);
