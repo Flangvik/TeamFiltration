@@ -423,7 +423,7 @@ namespace TeamFiltration.Modules
                 else if (_globalProperties.UsCloud)
                 {
                     var fireProxObject = _globalProperties.GetFireProxURLObject("https://login.microsoftonline.us", regionCount);
-                    fireProxObject.fireProxUrl = fireProxObject.fireProxUrl + "/common/oauth2/token/";
+                    fireProxObject.fireProxUrl = fireProxObject.fireProxUrl + "common/oauth2/token";
                     fireProxList.Add(fireProxObject);
 
 
@@ -438,7 +438,11 @@ namespace TeamFiltration.Modules
                 }
 
                 else
-                    fireProxList.Add(_globalProperties.GetFireProxURLObject("https://login.microsoftonline.com", regionCount));
+                {
+                    var fireProxObject = _globalProperties.GetFireProxURLObject("https://login.microsoftonline.com", regionCount);
+                    fireProxObject.fireProxUrl = fireProxObject.fireProxUrl + "common/oauth2/token";
+                    fireProxList.Add(fireProxObject);
+                }
 
                 if (!shuffleFireProxBool)
                     break;
@@ -497,7 +501,7 @@ namespace TeamFiltration.Modules
                     Environment.Exit(0);
                 }
             }
-                
+
 
             var validAccounts = await SprayAttemptWrap(listOfSprayAttempts, _globalProperties, databaseHandle, getUserRealmResult, delayInSeconds, regionCounter);
 

@@ -180,7 +180,7 @@ namespace TeamFiltration.Handlers
                 {
                     //get the object
                     List<TeamsExtSearchRep> responeObject = JsonConvert.DeserializeObject<List<TeamsExtSearchRep>>(userResp);
-                    //Console.WriteLine(JsonConvert.SerializeObject(responeObject, Formatting.Indented));
+               
                     //Any size
                     if (responeObject.Count() > 0)
                     {
