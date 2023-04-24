@@ -166,7 +166,7 @@ namespace TeamFiltration.Handlers
         failedResp:
             //TODO:Add logic to select FireProx endpoint based on current location 
 
-            var enumUserReq = await _teamsClient.PollyGetAsync(enumUserUrl + $"{TeamsRegion}/beta/users/{username}/externalsearchv3");
+            var enumUserReq = await _teamsClient.GetAsync(enumUserUrl + $"{TeamsRegion}/beta/users/{username}/externalsearchv3");
 
 
             if (enumUserReq.IsSuccessStatusCode)
@@ -180,7 +180,7 @@ namespace TeamFiltration.Handlers
                 {
                     //get the object
                     List<TeamsExtSearchRep> responeObject = JsonConvert.DeserializeObject<List<TeamsExtSearchRep>>(userResp);
-               
+
                     //Any size
                     if (responeObject.Count() > 0)
                     {
@@ -225,7 +225,7 @@ namespace TeamFiltration.Handlers
                             catch (Exception ex)
                             {
 
-                                
+
                             }
 
                             return (true, responeObject.FirstOrDefault().objectId, responeObject.FirstOrDefault(), Outofofficenote);
@@ -237,8 +237,8 @@ namespace TeamFiltration.Handlers
             }
             else if (enumUserReq.StatusCode.Equals(HttpStatusCode.Forbidden))
             {
-                //If we get the forbidden error response, we can assume it's valid!
-                return (true, Guid.NewGuid().ToString(), null, null);
+                //As of 24.04.2023 - Seems like MS have patched this.
+                return (false, "", null, null);
             }
             else if (enumUserReq.StatusCode.Equals(HttpStatusCode.InternalServerError))
             {
