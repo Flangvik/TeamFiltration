@@ -532,9 +532,9 @@ namespace TeamFiltration.Helpers
                     ("d3590ed6-52b3-4102-aeff-aad2292ab01c", "Microsoft Office"),
                     ("872cd9fa-d31f-45e0-9eab-6e460a02d1f1", "Visual Studio"),
                     ("af124e86-4e96-495a-b70a-90f90ab96707", "OneDrive iOS App"),
-                    ("2d7f3606-b07d-41d1-b9d2-0d0c9296a6e8", "Microsoft Bing Search for Microsoft Edge"),
+                   // ("2d7f3606-b07d-41d1-b9d2-0d0c9296a6e8", "Microsoft Bing Search for Microsoft Edge"),
                     ("844cca35-0656-46ce-b636-13f48b0eecbd", "Microsoft Stream Mobile Native"),
-                    ("87749df4-7ccf-48f8-aa87-704bad0e0e16", "Microsoft Teams - Device Admin Agent"),
+                   // ("87749df4-7ccf-48f8-aa87-704bad0e0e16", "Microsoft Teams - Device Admin Agent"),
                     ("cf36b471-5b44-428c-9ce7-313bf84528de", "Microsoft Bing Search"),
                     ("0ec893e0-5785-4de6-99da-4ed124e5296c", "Office UWP PWA"),
                     ("22098786-6e16-43cc-a27d-191a01a1e3b5", "Microsoft To-Do client"),
@@ -703,7 +703,7 @@ namespace TeamFiltration.Helpers
 
             var proxy = new WebProxy
             {
-                Address = new Uri(_globalProperties.TeamFiltrationConfig.proxyEndpoint),
+                Address = new Uri(_globalProperties?.TeamFiltrationConfig?.proxyEndpoint),
                 BypassProxyOnLocal = false,
                 UseDefaultCredentials = false
             };

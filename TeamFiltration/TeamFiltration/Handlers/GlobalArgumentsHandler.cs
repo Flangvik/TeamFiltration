@@ -42,7 +42,7 @@ namespace TeamFiltration.Handlers
             PushoverLocked = args.Contains("--push-locked");
             Pushover = args.Contains("--push");
             UsCloud = args.Contains("--us-cloud");
-            DebugMode = args.Contains("--debug");
+            this.DebugMode = args.Contains("--debug");
 
 
             var teamFiltrationConfigPath = args.GetValue("--config");
@@ -59,8 +59,13 @@ namespace TeamFiltration.Handlers
             {
                 if (!exfilModule)
                 {
-                    Console.WriteLine("[+] Could not find teamfiltration config, provide a config path using with --config");
+                    Console.WriteLine("[+] Could not find TeamFiltration config, provide a config path using with --config");
                     return;
+                }
+                else
+                {
+                    Console.WriteLine("[!] You are running TeamFiltration without a config");
+                   
                 }
 
             }
@@ -76,9 +81,19 @@ namespace TeamFiltration.Handlers
                 OwaLimit = LocalOwaLimit;
             else
                 OwaLimit = 2000;
+
+            if(TeamFiltrationConfig == null)
+            {
+                TeamFiltrationConfig = new Config() { };
+            }
+
             // Set default user agent if missing
             if (string.IsNullOrEmpty(TeamFiltrationConfig?.UserAgent))
                 TeamFiltrationConfig.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Teams/1.3.00.30866 Chrome/80.0.3987.165 Electron/8.5.1 Safari/537.36";
+            
+            // Set default user agent if missing
+            if (string.IsNullOrEmpty(TeamFiltrationConfig?.proxyEndpoint))
+                TeamFiltrationConfig.proxyEndpoint = "http://127.0.0.1:8080";
 
 
             if (TeamFiltrationConfig?.AwsRegions?.Count() > 0)
