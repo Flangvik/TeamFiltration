@@ -11,7 +11,11 @@ using TeamFiltration.Models.MSOL;
 using TeamFiltration.Models.TeamFiltration;
 using TeamFiltration.Models.Teams;
 using TeamFiltration.Helpers;
-
+using System.ComponentModel;
+using System.Diagnostics.Metrics;
+using System.IdentityModel.Tokens.Jwt;
+using System.Reflection;
+using System.Text.RegularExpressions;
 
 namespace TeamFiltration.Handlers
 {
@@ -158,6 +162,26 @@ namespace TeamFiltration.Handlers
             return workingWithDataResp;
         }
 
+        public Boolean isValidTeamsUsername(List<TeamsExtSearchRep> array, String username)
+        {
+            foreach (TeamsExtSearchRep obj in array)
+            {
+                PropertyInfo[] properties = obj.GetType().GetProperties();
+
+                foreach (PropertyInfo property in properties)
+                {
+
+                    object value = property.GetValue(obj);
+
+                    if (value != null && value.ToString().Equals(username))
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
         public async Task<(bool isValid, string objectId, TeamsExtSearchRep responseObject, Outofofficenote Outofofficenote)> EnumUser(string username, string enumUserUrl)
         {
             Outofofficenote Outofofficenote = new Outofofficenote() { };
@@ -185,19 +209,7 @@ namespace TeamFiltration.Handlers
                     if (responeObject.Count() > 0)
                     {
 
-                        if (
-                            //Check that the TenantID is not null
-                            responeObject.FirstOrDefault().tenantId != null
-
-                            //Check that the coExistenceMode is not Unknown
-                            && !responeObject.FirstOrDefault().featureSettings.coExistenceMode.Equals("Unknown")
-
-                            //Check that the Display != Equals email. 
-                            && !responeObject.FirstOrDefault().displayName.Equals(username)
-
-                            //Check that the UPN matches the email your are looking for
-                            && responeObject.FirstOrDefault().userPrincipalName.ToLower().Equals(username.ToLower())
-                            )
+                        if (isValidTeamsUsername(responeObject, username))
                         {
 
                             try
