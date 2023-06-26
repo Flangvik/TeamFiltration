@@ -575,10 +575,6 @@ namespace TeamFiltration.Handlers
 
 
             using var client = new HttpClient(httpClientHandler);
-
-
-
-
             var loginPostBody = new FormUrlEncodedContent(new[]
             {
                 new KeyValuePair<string, string>("resource", randomO365Res.Uri),

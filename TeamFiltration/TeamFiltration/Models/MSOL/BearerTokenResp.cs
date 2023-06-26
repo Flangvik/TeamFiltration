@@ -28,6 +28,20 @@ namespace TeamFiltration.Models.MSOL
                 return JsonConvert.DeserializeObject<BearerTokenResp>(v.ResponseData);
             return null;
         }
+
+        public static explicit operator BearerTokenResp(RoadToolsAuth v)
+        {
+            if (v != null)
+                return new BearerTokenResp()
+                {
+                    access_token = v.accessToken,
+                    refresh_token = v.refreshToken,
+                    expires_in = v.expiresOn,
+                    expires_on = v.expiresOn,
+                    id_token = v.idToken,
+                };
+            return null;
+        }
     }
 
 }
