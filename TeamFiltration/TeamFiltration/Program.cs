@@ -59,6 +59,7 @@ namespace TeamFiltration
             Console.WriteLine("   --enum        Load the enumeration module\n");
             Console.WriteLine("         --domain              Domain to perfom enumeration against, names pulled from statistically-likely-usernames if not provided with --usernames");
             Console.WriteLine("         --usernames           Path to a list of usernames to enumerate (emails)");
+            Console.WriteLine("         --tenant-info         Enumerates tenant and domain information (Based on Invoke-AADIntReconAsOutsider from AADInternal)");
             Console.WriteLine("         --dehashed            Use the dehashed submodule in order to enumerate emails from a basedomain");
             Console.WriteLine("         --validate-msol       Validate that the given o365 accounts exists using the public GetCredentialType method (Very RateLimited - Slow 20 e/s)");
             Console.WriteLine("         --validate-teams      Validate that the given o365 accounts exists using the Teams API method (Recommended - Super Fast 300 e/s)");

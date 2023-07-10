@@ -18,6 +18,7 @@ using System.Collections.Concurrent;
 using Dasync.Collections;
 using System.Threading;
 using System.Net.Http.Headers;
+using ConsoleTables;
 
 namespace TeamFiltration.Modules
 {
@@ -234,11 +235,13 @@ namespace TeamFiltration.Modules
 
             var usernameListPath = args.GetValue("--usernames");
 
-
+            var getTenantInfo = args.Contains("--tenant-info");
 
             var options = new EnumOptions(args);
 
-            if (options.ValidateAccsLogin == false && options.ValidateAccsO365 == false && options.ValidateAccsTeams == false && options.Dehashed == false)
+
+
+            if (options.ValidateAccsLogin == false && options.ValidateAccsO365 == false && options.ValidateAccsTeams == false && options.Dehashed == false && getTenantInfo == false)
             {
                 _databaseHandle.WriteLog(new Log("[+]", $"Please select an validation options! (eg --validate-teams) ", ""));
                 Environment.Exit(0);
@@ -260,7 +263,7 @@ namespace TeamFiltration.Modules
                         Environment.Exit(0);
 
                     }
-                    domain = "@" + userListData.FirstOrDefault().Split("@")[1];
+                    domain = userListData.FirstOrDefault().Split("@")[1];
                 }
                 else
                 {
@@ -350,6 +353,51 @@ namespace TeamFiltration.Modules
                 }
 
             }
+
+            if (getTenantInfo)
+            {
+                try
+                {
+
+                    UserRealmLoginResp getUserRealm = await msolHandler.GetUserRealm("randomuser@" + domain);
+                    Console.WriteLine($"[+] Tenant Brand: {getUserRealm.FederationBrandName}");
+                    GetOpenIdConfigResp openIdConfig = await msolHandler.GetOpenIdConfig(domain);
+                    //  Console.WriteLine($"Tenant Name: {}");
+                    Console.WriteLine($"[+] Tenant Id: {openIdConfig.authorization_endpoint.Split("/")[3]}");
+                    Console.WriteLine($"[+] Tenant region: {openIdConfig.tenant_region_scope}");
+                    Envelope outlookAutoDiscover = await msolHandler.GetOutlookAutodiscover(domain);
+                    var tenantDomains = outlookAutoDiscover.Body.GetFederationInformationResponseMessage.Response.Domains;
+                    Console.WriteLine($"[+] Enumerating {tenantDomains.Count()} Tenant Domains:");
+
+                    List<UserRealmLoginResp> userRealmLoginRespList = new List<UserRealmLoginResp>();
+
+                    //Setup the progressBar
+                    int conversationCount = 0;
+                    int totalConversationCount = tenantDomains.Count();
+                    using (var progress = new ProgressBar())
+                    {
+                        foreach (var tenantDomain in outlookAutoDiscover.Body.GetFederationInformationResponseMessage.Response.Domains)
+                        {
+                            UserRealmLoginResp bufferGetUserRealm = await msolHandler.GetUserRealm("randomuser@" + tenantDomain);
+                            userRealmLoginRespList.Add(bufferGetUserRealm);
+                            conversationCount++;
+                            progress.Report((double)conversationCount / totalConversationCount);
+
+                        }
+
+
+                    }
+                    Console.WriteLine($"[+] Tenant Domains:");
+                    ConsoleTable.From<UserRealmLoginRespPretty>(userRealmLoginRespList.Select(x => (UserRealmLoginRespPretty)x)).Configure(o => o.NumberAlignment = Alignment.Right).Write(Format.Alternative);
+
+                }
+                catch (Exception ex)
+                {
+
+                    Console.WriteLine("[!] Failed to complete tenant enumeration");
+                }
+            }
+
 
             try
             {
