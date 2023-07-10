@@ -16,6 +16,10 @@ using static TeamFiltration.Modules.Spray;
 using System.Web;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http.Headers;
+using System.Xml.Linq;
+using System.Data.SqlTypes;
+using System.IO;
+using System.Xml.Serialization;
 
 namespace TeamFiltration.Handlers
 {
@@ -31,6 +35,159 @@ namespace TeamFiltration.Handlers
             _moduleName = module;
             _databaseHandler = databaseHandler;
             _debugMode = globalProperties.DebugMode;
+        }
+
+
+        public async Task<GetOpenIdConfigResp> GetOpenIdConfig(string domain)
+        {
+            string url = $"https://login.microsoftonline.com/{domain}/.well-known/openid-configuration";
+
+            var proxy = new WebProxy
+            {
+                Address = new Uri(_globalProperties.TeamFiltrationConfig.proxyEndpoint),
+                BypassProxyOnLocal = false,
+                UseDefaultCredentials = false,
+            };
+
+
+            var httpClientHandler = new HttpClientHandler
+            {
+                Proxy = proxy,
+                ServerCertificateCustomValidationCallback = (message, xcert, chain, errors) =>
+                {
+
+                    return true;
+                },
+                SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls,
+                UseProxy = _debugMode,
+                AllowAutoRedirect = false
+            };
+
+
+
+            var openIdHttpClient = new HttpClient(httpClientHandler);
+
+            openIdHttpClient.DefaultRequestHeaders.Add("Accept", "application/json");
+            openIdHttpClient.DefaultRequestHeaders.Add("User-Agent", _globalProperties.TeamFiltrationConfig.UserAgent);
+
+            //Add some error handling here
+            var httpResp = await openIdHttpClient.GetAsync(url);
+            if (httpResp.IsSuccessStatusCode)
+            {
+                string stringContent = await httpResp.Content.ReadAsStringAsync();
+                var getOpenIdConfigRespObject = JsonConvert.DeserializeObject<GetOpenIdConfigResp>(stringContent);
+                return getOpenIdConfigRespObject;
+            }
+            //  var httpResp = await openIdHttpClient.PostAsync(url, loginPostBody);
+
+            return null;
+
+        }
+
+        public async Task<Envelope> GetOutlookAutodiscover(string domain)
+        {
+
+            string url = "https://autodiscover-s.outlook.com/autodiscover/autodiscover.svc";
+            var proxy = new WebProxy
+            {
+                Address = new Uri(_globalProperties.TeamFiltrationConfig.proxyEndpoint),
+                BypassProxyOnLocal = false,
+                UseDefaultCredentials = false,
+            };
+
+            var httpClientHandler = new HttpClientHandler
+            {
+                Proxy = proxy,
+                ServerCertificateCustomValidationCallback = (message, xcert, chain, errors) =>
+                {
+                    return true;
+                },
+                SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls,
+                UseProxy = _debugMode,
+                AllowAutoRedirect = true
+            };
+
+            var getAutodiscoverClient = new HttpClient(httpClientHandler);
+
+            string xmlData = $@"<?xml version=""1.0"" encoding=""utf-8""?>
+        <soap:Envelope xmlns:exm=""http://schemas.microsoft.com/exchange/services/2006/messages"" xmlns:ext=""http://schemas.microsoft.com/exchange/services/2006/types"" xmlns:a=""http://www.w3.org/2005/08/addressing"" xmlns:soap=""http://schemas.xmlsoap.org/soap/envelope/"" xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+	        <soap:Header>
+		        <a:Action soap:mustUnderstand=""1"">http://schemas.microsoft.com/exchange/2010/Autodiscover/Autodiscover/GetFederationInformation</a:Action>
+		        <a:To soap:mustUnderstand=""1"">https://autodiscover-s.outlook.com/autodiscover/autodiscover.svc</a:To>
+		        <a:ReplyTo>
+			        <a:Address>http://www.w3.org/2005/08/addressing/anonymous</a:Address>
+		        </a:ReplyTo>
+	        </soap:Header>
+	        <soap:Body>
+		        <GetFederationInformationRequestMessage xmlns=""http://schemas.microsoft.com/exchange/2010/Autodiscover"">
+			        <Request>
+				        <Domain>{domain}</Domain>
+			        </Request>
+		        </GetFederationInformationRequestMessage>
+	        </soap:Body>
+        </soap:Envelope>";
+
+
+            getAutodiscoverClient.DefaultRequestHeaders.Add("User-Agent", "AutodiscoverClient");
+
+            Envelope envelope = null;
+            var xmlBody = new StringContent(xmlData, Encoding.UTF8, "text/xml");
+            HttpResponseMessage httpResp = await getAutodiscoverClient.PostAsync(url, xmlBody);
+            string contentResp = await httpResp.Content.ReadAsStringAsync();
+
+            XmlSerializer serializer = new XmlSerializer(typeof(Envelope), new XmlRootAttribute("Envelope") { Namespace = "http://schemas.xmlsoap.org/soap/envelope/" });
+            using (StringReader stringReader = new StringReader(contentResp))
+            {
+                envelope = (Envelope)serializer.Deserialize(stringReader);
+
+            }
+
+            return envelope;
+
+        }
+
+        public async Task<UserRealmLoginResp> GetUserRealm(string email)
+        {
+            string url = $"https://login.microsoftonline.com/GetUserRealm.srf?login={email}";
+
+            var proxy = new WebProxy
+            {
+                Address = new Uri(_globalProperties.TeamFiltrationConfig.proxyEndpoint),
+                BypassProxyOnLocal = false,
+                UseDefaultCredentials = false,
+            };
+
+
+            var httpClientHandler = new HttpClientHandler
+            {
+                Proxy = proxy,
+                ServerCertificateCustomValidationCallback = (message, xcert, chain, errors) =>
+                {
+                    return true;
+                },
+                SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls,
+                UseProxy = _debugMode,
+                AllowAutoRedirect = false
+            };
+
+
+
+            var openIdHttpClient = new HttpClient(httpClientHandler);
+
+            openIdHttpClient.DefaultRequestHeaders.Add("Accept", "application/json");
+            openIdHttpClient.DefaultRequestHeaders.Add("User-Agent", _globalProperties.TeamFiltrationConfig.UserAgent);
+
+            //Add some error handling here
+            var httpResp = await openIdHttpClient.GetAsync(url);
+            if (httpResp.IsSuccessStatusCode)
+            {
+                string userRealmLoginRespContent = await httpResp.Content.ReadAsStringAsync();
+                var userRealmLoginRespObject = JsonConvert.DeserializeObject<UserRealmLoginResp>(userRealmLoginRespContent);
+                return userRealmLoginRespObject;
+            }
+            //  var httpResp = await openIdHttpClient.PostAsync(url, loginPostBody);
+
+            return null;
         }
 
 
@@ -160,9 +317,6 @@ namespace TeamFiltration.Handlers
                     new KeyValuePair<string, string>("AuthMethod", "FormsAuthentication"),
 
                 });
-
-
-
 
                 Uri adfsUrl = new Uri(sprayAttempts.FireProxURL);
 

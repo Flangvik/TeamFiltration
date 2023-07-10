@@ -1147,8 +1147,22 @@ namespace TeamFiltration.Modules
             }
             else
             {
-                Console.WriteLine("[!] Failed to parse JWT and get TenantId");
-                Environment.Exit(0);
+                Console.WriteLine("[!] Failed to parse JWT and get TenantId automatically, what is the targets email?");
+                Console.WriteLine("#>");
+                string targetEmail = Console.ReadLine();
+                try
+                {
+                    string domain = targetEmail.Trim().Split("@")[1];
+                    GetOpenIdConfigResp openIdConfig = await msolHandler.GetOpenIdConfig(domain);
+                    tenantId = openIdConfig.authorization_endpoint.Split("/")[3];
+                }
+                catch (Exception)
+                {
+                    Console.WriteLine("[!] Failed to retrive TenantID, cannot continue without");
+                    Environment.Exit(0);
+                }
+             
+                
             }
             string cookie = "ESTSAUTHPERSISTENT=" + cookieObjects.Where(x => x.name.Equals("ESTSAUTHPERSISTENT")).FirstOrDefault()?.value;
             if (string.IsNullOrEmpty(cookie))
