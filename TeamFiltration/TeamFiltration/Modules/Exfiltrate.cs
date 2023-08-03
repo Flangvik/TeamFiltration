@@ -1684,7 +1684,20 @@ namespace TeamFiltration.Modules
                      async upn =>
                      {
                          if (logDb)
-                             _databaseHandler.WriteValidAcc(new ValidAccount() { Username = upn.userPrincipalName.Trim().ToLower(), Id = Helpers.Generic.StringToGUID(upn.userPrincipalName.Trim().ToLower()).ToString() });
+                             try
+                             {
+                                 _databaseHandler.WriteValidAcc(new ValidAccount()
+                                 {
+                                     Username = upn.userPrincipalName.Trim().ToLower(),
+                                     Id = Helpers.Generic.StringToGUID(upn.userPrincipalName.Trim().ToLower()).ToString()
+                                 });
+                             }
+                             catch (Exception ex)
+                             {
+
+                                 
+                             }
+                           
                      },
                        maxDegreeOfParallelism: 700);
             }
