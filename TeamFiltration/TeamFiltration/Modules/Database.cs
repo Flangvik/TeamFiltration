@@ -201,7 +201,7 @@ namespace TeamFiltration.Modules
                         }
                         if (string.IsNullOrEmpty(_globalProperties.TeamFiltrationConfig?.AWSAccessKey) || string.IsNullOrEmpty(_globalProperties.TeamFiltrationConfig?.AWSSecretKey))
                         {
-                            Console.WriteLine("[!] Missing AWSAccessKey and/or AWSSecretKey, must be provided in the configuration file using '--config'");
+                            Console.WriteLine("[!] Missing AWSAccessKey, AWSSecretKey, and/or AWSSessionToken, must be provided in the configuration file using '--config'");
                             Environment.Exit(0);
                         }
 

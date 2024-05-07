@@ -17,11 +17,13 @@ namespace TeamFiltration.Handlers
         private static GlobalArgumentsHandler _globalProperties { get; set; }
         private static DatabaseHandler _databaseHandler { get; set; }
         private static BasicAWSCredentials _basicAWSCredentials { get; set; }
+        private static SessionAWSCredentials _sessionAWSCredentials { get; set; }
+        private static AWSCredentials _AWSCredentials { get; set; }
 
 
         public async Task<bool> DeleteFireProxEndpoint(string fireProxId, string region)
         {
-            var amazonAPIGatewayClient = new AmazonAPIGatewayClient(_basicAWSCredentials, Amazon.RegionEndpoint.GetBySystemName(region));
+            var amazonAPIGatewayClient = new AmazonAPIGatewayClient(_AWSCredentials, Amazon.RegionEndpoint.GetBySystemName(region));
 
             Amazon.APIGateway.Model.DeleteRestApiResponse deleteRestApiResponse = await amazonAPIGatewayClient.DeleteRestApiAsync(new Amazon.APIGateway.Model.DeleteRestApiRequest() { RestApiId = fireProxId });
 
@@ -44,7 +46,7 @@ namespace TeamFiltration.Handlers
             
             foreach (var item in _globalProperties.AWSRegions)
             {
-                var amazonAPIGatewayClient = new AmazonAPIGatewayClient(_basicAWSCredentials, Amazon.RegionEndpoint.GetBySystemName(item));
+                var amazonAPIGatewayClient = new AmazonAPIGatewayClient(_AWSCredentials, Amazon.RegionEndpoint.GetBySystemName(item));
 
                 Amazon.APIGateway.Model.GetRestApisResponse getRestApisResponse = await amazonAPIGatewayClient.GetRestApisAsync(new Amazon.APIGateway.Model.GetRestApisRequest() { });
             }
@@ -52,7 +54,7 @@ namespace TeamFiltration.Handlers
         */
         public async Task<(Amazon.APIGateway.Model.CreateDeploymentRequest, Models.AWS.FireProxEndpoint)> CreateFireProxEndPoint(string url, string title, string region)
         {
-            var amazonAPIGatewayClient = new AmazonAPIGatewayClient(_basicAWSCredentials, Amazon.RegionEndpoint.GetBySystemName(region));
+            var amazonAPIGatewayClient = new AmazonAPIGatewayClient(_AWSCredentials, Amazon.RegionEndpoint.GetBySystemName(region));
 
             if (url.EndsWith('/'))
                 url = url.Substring(0, url.Length - 1);
@@ -198,17 +200,27 @@ namespace TeamFiltration.Handlers
             return (createDeploymentRequest, fireproxEndpoint);
         }
 
-        public AWSHandler(string AWSAccessKey, string AWSSecretKey, DatabaseHandler databaseHandler)
+        public AWSHandler(string AWSAccessKey, string AWSSecretKey, string AWSSessionToken, DatabaseHandler databaseHandler)
         {
             _databaseHandler = databaseHandler;
 
-            if (!string.IsNullOrEmpty(AWSAccessKey) && !string.IsNullOrEmpty(AWSSecretKey))
+            if (!string.IsNullOrEmpty(AWSAccessKey) && !string.IsNullOrEmpty(AWSSecretKey) && string.IsNullOrEmpty(AWSSessionToken))
             {
 
                 _basicAWSCredentials = new BasicAWSCredentials(
                     AWSAccessKey,
                     AWSSecretKey
                     );
+                _AWSCredentials = _basicAWSCredentials;
+            }
+            else if (!string.IsNullOrEmpty(AWSAccessKey) && !string.IsNullOrEmpty(AWSSecretKey) && !string.IsNullOrEmpty(AWSSessionToken))
+            {
+                _sessionAWSCredentials = new SessionAWSCredentials(
+                    AWSAccessKey,
+                    AWSSecretKey,
+                    AWSSessionToken
+                    );
+                _AWSCredentials = _sessionAWSCredentials;
             }
 
         }
