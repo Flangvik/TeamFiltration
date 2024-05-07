@@ -42,7 +42,13 @@ jobs:
         run:  |
             VERSION=${{ github.ref_name }}
             dotnet publish $PWD/TeamFiltration/ -c ${{ matrix.release.type }} -r linux-x64 -p:PublishSingleFile=true --self-contained true --output $PWD/TeamFiltrationRelease/Linux/ -p:Version=${VERSION:1}
-        
+
+      - name: Build for Linux ARM
+        continue-on-error: true
+        run:  |
+            VERSION=${{ github.ref_name }}
+            dotnet publish $PWD/TeamFiltration/ -c ${{ matrix.release.type }} -r linux-arm64 -p:PublishSingleFile=true --self-contained true --output $PWD/TeamFiltrationRelease/LinuxArm/ -p:Version=${VERSION:1}
+
       - name: Build for Mac Intel
         continue-on-error: true
         run:  |
@@ -65,6 +71,11 @@ jobs:
         if: "! startsWith(github.event_name, 'pull_request')"
         run: 7z a -tzip -mx9 TeamFiltration-${{ github.ref_name }}-linux-x86_64$.zip $PWD/TeamFiltrationRelease/Linux/TeamFiltration $PWD/*.json
 
+      - name: Zip Linux ARM
+        continue-on-error: true
+        if: "! startsWith(github.event_name, 'pull_request')"
+        run: 7z a -tzip -mx9 TeamFiltration-${{ github.ref_name }}-linux-arm64$.zip $PWD/TeamFiltrationRelease/LinuxArm/TeamFiltration $PWD/*.json
+
       - name: Zip Mac
         continue-on-error: true
         if: "! startsWith(github.event_name, 'pull_request')"
@@ -81,5 +92,6 @@ jobs:
           files: |
             TeamFiltration-${{ github.ref_name }}-win-x86_64.zip
             TeamFiltration-${{ github.ref_name }}-linux-x86_64$.zip
+            TeamFiltration-${{ github.ref_name }}-linux-arm64$.zip
             TeamFiltration-${{ github.ref_name }}-macOS-x86_64.zip
             TeamFiltration-${{ github.ref_name }}-macOS-arm64.zip
