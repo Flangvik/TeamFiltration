@@ -1,10 +1,12 @@
 ﻿using Nager.PublicSuffix;
+using Nager.PublicSuffix.RuleProviders;
 using Newtonsoft.Json;
 using PushoverClient;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Text;
 using TeamFiltration.Helpers;
@@ -34,7 +36,14 @@ namespace TeamFiltration.Handlers
         public GlobalArgumentsHandler(string[] args, DatabaseHandler databaseHandler, bool exfilModule = false)
         {
 
-            _domainParser = new DomainParser(new WebTldRuleProvider());
+            //Really need to move away from this, but it's a quick fix for now
+            var httpClient = new HttpClient();
+            var cacheProvider = new Nager.PublicSuffix.RuleProviders.CacheProviders.LocalFileSystemCacheProvider();
+            var ruleProvider = new CachedHttpRuleProvider(cacheProvider, httpClient);
+
+            ruleProvider.BuildAsync().GetAwaiter().GetResult();
+
+            _domainParser = new DomainParser(ruleProvider);
 
             OutPutPath = args.GetValue("--outpath");
             AADSSO = args.Contains("--aad-sso");

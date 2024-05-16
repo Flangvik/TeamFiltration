@@ -637,7 +637,6 @@ namespace TeamFiltration.Handlers
                 new KeyValuePair<string, string>("client_id",  clientId),
                 new KeyValuePair<string, string>("resource", "https://" + new Uri(resURI).Host ),
                 new KeyValuePair<string, string>("scope", scope),
-                new KeyValuePair<string, string>("windows_api_version", "2.0"),
                 new KeyValuePair<string, string>("claims", "{\"access_token\":{\"xms_cc\":{\"values\":[\"CP1\"]}}}"),
 
 
