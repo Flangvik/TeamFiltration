@@ -318,6 +318,7 @@ namespace TeamFiltration.Modules
                     gitHubDict.Add(8, "https://raw.githubusercontent.com/Flangvik/statistically-likely-usernames/master/smithj.txt");
                     gitHubDict.Add(9, "https://raw.githubusercontent.com/Flangvik/statistically-likely-usernames/master/john_smith.txt");
                     gitHubDict.Add(10, "https://raw.githubusercontent.com/Flangvik/statistically-likely-usernames/master/j.smith.txt");
+                    gitHubDict.Add(11, "https://raw.githubusercontent.com/Flangvik/statistically-likely-usernames/master/smithjj.txt");
 
 
                     foreach (var usernameDict in gitHubDict)
