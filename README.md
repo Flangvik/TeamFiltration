@@ -46,7 +46,7 @@ This tool has been used internally while working at TrustedSec since January 202
  └╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╝
    ╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝
 
-[❤] TeamFiltration V3.5.2 PUBLIC, created by @Flangvik at @KovertNO, @TrustedSec
+[❤] TeamFiltration V3.5.4 PUBLIC, created by @Flangvik at @KovertNO, @TrustedSec
 [+] Args parsed 
 Usage:
 
