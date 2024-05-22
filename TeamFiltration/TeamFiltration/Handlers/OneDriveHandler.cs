@@ -428,7 +428,7 @@ namespace TeamFiltration.Handlers
 
                     _databaseHandler.WriteLog(new Log("EXFIL", "-->" + oneDriveItem.Name));
 
-                    if (!File.Exists(Path.Combine(fullPath, oneDriveItem.Name)) && oneDriveItem.Name.EndsWith(".dat"))
+                    if (!File.Exists(Path.Combine(fullPath, oneDriveItem.Name)))
                         await _oneDrive.DownloadItem(oneDriveItem, fullPath);
                 }
                 catch (Exception e)
