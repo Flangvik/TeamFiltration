@@ -8,7 +8,7 @@
 TeamFiltration is a cross-platform framework for enumerating, spraying, exfiltrating, and backdooring O365 AAD accounts.
 See the [TeamFiltration](https://github.com/Flangvik/TeamFiltration/wiki/Home) wiki page for an introduction into how TeamFiltration works and the [Quick Start  Guide](https://github.com/Flangvik/TeamFiltration/wiki/Home#quick-start-guide) for how to get up and running!
 
-This tool has been used internally while working at TrustedSec since January 2021 and was publicly released in my talk [Taking a Dumb In The Cloud](https://youtu.be/GpZTQHLKelg) during DefCON30.
+This tool has been used internally while working at TrustedSec since January 2021 and was publicly released in my talk [Taking a Dump In The Cloud](https://youtu.be/GpZTQHLKelg) during DefCON30.
 
 ## Download
 [You can download the latest precompiled release for Linux, Windows and MacOS ](https://github.com/Flangvik/TeamFiltration/releases/latest)   
