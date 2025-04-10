@@ -65,6 +65,7 @@ namespace TeamFiltration
             Console.WriteLine("         --validate-msol       Validate that the given o365 accounts exists using the public GetCredentialType method (Very RateLimited - Slow 20 e/s)");
             Console.WriteLine("         --validate-teams      Validate that the given o365 accounts exists using the Teams API method (Recommended - Super Fast 300 e/s)");
             Console.WriteLine("         --validate-login      Validate that the given o365 accounts by attemping to login (Noisy - triggers logins - Fast 100 e/s)\n");
+            Console.WriteLine("         --validate-onedrive   Validate that the given o365 accounts using @nyxgeek OneDrive method (Recommended - Fast 300 e/s)\n");
 
             Console.WriteLine("   --backdoor        Loads the interactive backdoor module\n");
             Console.WriteLine("   --database        Loads the interactive database browser module\n");
@@ -120,7 +121,7 @@ namespace TeamFiltration
 ";
 
             Console.WriteLine(asci);
-            Console.WriteLine("[♥] TeamFiltration V3.5.4 PUBLIC, created by @Flangvik at @TrustedSec");
+            Console.WriteLine("[♥] TeamFiltration V3.5.5 PUBLIC, created by @Flangvik at @TrustedSec");
             Console.WriteLine($"[+] Args parsed {string.Join(' ', args)}");
 
 

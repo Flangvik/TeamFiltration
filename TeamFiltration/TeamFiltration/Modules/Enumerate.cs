@@ -36,6 +36,9 @@ namespace TeamFiltration.Modules
             if (args.Contains("--validate-login"))
                 this.ValidateAccsLogin = true;
 
+            if (args.Contains("--validate-onedrive"))
+                this.ValidateAccsOneDrive = true;
+
             if (args.Contains("--enum-mfa"))
                 this.EnumMFA = true;
 
@@ -47,6 +50,7 @@ namespace TeamFiltration.Modules
         public bool ValidateAccsTeams { get; set; }
         public bool ValidateAccsO365 { get; set; }
         public bool ValidateAccsLogin { get; set; }
+        public bool ValidateAccsOneDrive { get; set; }
         public bool Dehashed { get; set; }
 
     }
@@ -208,6 +212,27 @@ namespace TeamFiltration.Modules
             return false;
         }
 
+        public static async Task ValidUserWrapperOneDrive(OneDriveEnumHandler oneDriveEnumHandler, string username)
+        {
+
+
+
+            var validUser = await oneDriveEnumHandler.ValidateO365Account(username);
+            if (validUser)
+            {
+                _databaseHandle.WriteLog(new Log("ENUM", $"{username} valid!", ""));
+
+                _databaseHandle.WriteValidAcc(new ValidAccount() { Username = username, Id = Helpers.Generic.StringToGUID(username).ToString() });
+
+            }
+            else if (!validUser)
+            {
+                //User is not valid, let's note that down
+                _databaseHandle.WriteInvalidAcc(new ValidAccount() { Username = username, Id = Helpers.Generic.StringToGUID(username).ToString(), objectId = "" });
+            }
+
+
+        }
         public static async Task ValidUserWrapperO365(MSOLHandler msolHandler, string username, string url)
         {
 
@@ -241,7 +266,7 @@ namespace TeamFiltration.Modules
 
 
 
-            if (options.ValidateAccsLogin == false && options.ValidateAccsO365 == false && options.ValidateAccsTeams == false && options.Dehashed == false && getTenantInfo == false)
+            if (options.ValidateAccsLogin == false && options.ValidateAccsO365 == false && options.ValidateAccsTeams == false && options.Dehashed == false && getTenantInfo == false && options.ValidateAccsOneDrive == false)
             {
                 _databaseHandle.WriteLog(new Log("[+]", $"Please select an validation options! (eg --validate-teams) ", ""));
                 Environment.Exit(0);
@@ -539,6 +564,41 @@ namespace TeamFiltration.Modules
                         _databaseHandle.WriteLog(new Log("ENUM", $"Teams enumeration failed, lack of Sacrificial O365 Username and/or password", ""));
 
                     }
+                }
+                else if (options.ValidateAccsOneDrive)
+                {
+
+                    var approcTime = (int)Math.Round(TimeSpan.FromSeconds(((double)userListData.Count() / 300)).TotalMinutes);
+
+                    _databaseHandle.WriteLog(new Log("ENUM", $"Enumerating {userListData.Count()} possible accounts, this will take ~{approcTime} minutes", ""));
+
+
+                    var sharepoint_endpoint = "sharepoint.com";
+                    var tenant_name = "";
+                    if (args.Contains("--tenant-name"))
+                        tenant_name = args.GetValue("--tenant-name");
+
+                    var oneDriveEnumHandler = new OneDriveEnumHandler(_globalProperties, tenant_name, sharepoint_endpoint, userListData.FirstOrDefault().Split('@')[1], _databaseHandle);
+
+                    if (string.IsNullOrEmpty(tenant_name))
+                        await oneDriveEnumHandler.enumTenantName();
+
+                    //For now let's not use the fireprox endpoints for this method
+                    //(Amazon.APIGateway.Model.CreateDeploymentRequest, Models.AWS.FireProxEndpoint, string fireProxUrl) enumUserUrl = _globalProperties.GetFireProxURLObject("https://teams.microsoft.com/api/mt/", (new Random()).Next(0, _globalProperties.AWSRegions.Length));
+
+                    await userListData.ParallelForEachAsync(
+                       async user =>
+                       {
+                           await ValidUserWrapperOneDrive(oneDriveEnumHandler, user);
+                       },
+                       maxDegreeOfParallelism: 300);
+
+
+
+                    //await _globalProperties._awsHandler.DeleteFireProxEndpoint(enumUserUrl.Item1.RestApiId, enumUserUrl.Item2.Region);
+
+
+
                 }
                 else if (options.ValidateAccsLogin)
                 {
