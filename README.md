@@ -8,7 +8,7 @@
 TeamFiltration is a cross-platform framework for enumerating, spraying, exfiltrating, and backdooring O365 AAD accounts.
 See the [TeamFiltration](https://github.com/Flangvik/TeamFiltration/wiki/Home) wiki page for an introduction into how TeamFiltration works and the [Quick Start  Guide](https://github.com/Flangvik/TeamFiltration/wiki/Home#quick-start-guide) for how to get up and running!
 
-This tool has been used internally while working at TrustedSec since January 2021 and was publicly released in my talk [Taking a Dumb In The Cloud](https://youtu.be/GpZTQHLKelg) during DefCON30.
+This tool has been used internally while working at TrustedSec since January 2021 and was publicly released in my talk [Taking a Dump In The Cloud](https://youtu.be/GpZTQHLKelg) during DefCON30.
 
 ## Download
 [You can download the latest precompiled release for Linux, Windows and MacOS ](https://github.com/Flangvik/TeamFiltration/releases/latest)   
@@ -46,7 +46,7 @@ This tool has been used internally while working at TrustedSec since January 202
  └╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╝
    ╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝
 
-[❤] TeamFiltration V3.5.4 PUBLIC, created by @Flangvik at @KovertNO, @TrustedSec
+[❤] TeamFiltration V3.5.5 PUBLIC, created by @Flangvik at @KovertNO, @TrustedSec
 [+] Args parsed 
 Usage:
 
@@ -102,6 +102,7 @@ Usage:
          --validate-msol       Validate that the given o365 accounts exists using the public GetCredentialType method (Very RateLimited - Slow 20 e/s)
          --validate-teams      Validate that the given o365 accounts exists using the Teams API method (Recommended - Super Fast 300 e/s)
          --validate-login      Validate that the given o365 accounts by attemping to login (Noisy - triggers logins - Fast 100 e/s)
+         --validate-onedrive   Validate that the given o365 accounts using @nyxgeek OneDrive method (Recommended - Fast 300 e/s
 
    --backdoor        Loads the interactive backdoor module
 

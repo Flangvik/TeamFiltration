@@ -279,7 +279,7 @@ namespace TeamFiltration.Modules
             if (!string.IsNullOrEmpty(exludeListPath))
             {
                 excludeList = File.ReadAllLines(exludeListPath).Select(x => x.ToLower().Trim()).ToArray();
-                databaseHandle.WriteLog(new Log("SPRAY", $"Exlcuding {excludeList.Count()} emails"!));
+                databaseHandle.WriteLog(new Log("SPRAY", $"Excluding {excludeList.Count()} emails"!));
             }
 
             if (string.IsNullOrEmpty(passwordListPath))

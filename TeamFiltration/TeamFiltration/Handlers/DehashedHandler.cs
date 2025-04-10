@@ -54,10 +54,10 @@ namespace TeamFiltration.Handlers
             _dehashedClient.DefaultRequestHeaders.Add("Accept", "application/json");
 
         }
-        public async Task<QueryResponse> QueryDehashed(string domain, int page, int size)
+        public async Task<DehashedQueryResponse> QueryDehashed(string domain, int page, int size)
         {
 
-            var jsonData = new QueryRequest()
+            var jsonData = new DehashedQueryRequest()
             {
                 query = "domain:" + domain,
                 page = page,
@@ -73,19 +73,19 @@ namespace TeamFiltration.Handlers
             var rawData = await dehashedResponse.Content.ReadAsStringAsync();
             if (dehashedResponse.IsSuccessStatusCode)
             {
-                return JsonConvert.DeserializeObject<Models.Dehashed.QueryResponse>(rawData);
+                return JsonConvert.DeserializeObject<Models.Dehashed.DehashedQueryResponse>(rawData);
             }
             else
             {
                 Console.WriteLine($"[+] Failed to get data from Dehashed, response: {rawData}");
-                return (new QueryResponse() { balance = 0,entries = new List<Entry>() {  },took = "", total = 0});
+                return (new DehashedQueryResponse() { balance = 0,entries = new List<Entry>() {  },took = "", total = 0});
             };
 
 
 
         }
 
-        public async Task<QueryResponse> FetchDomainEntries(string domain)
+        public async Task<DehashedQueryResponse> FetchDomainEntries(string domain)
         {
             int page = 1;
             int size = 10000;

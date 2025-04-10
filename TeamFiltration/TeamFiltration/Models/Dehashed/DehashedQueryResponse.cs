@@ -6,7 +6,7 @@ namespace TeamFiltration.Models.Dehashed
 {
 
 
-    public class QueryResponse
+    public class DehashedQueryResponse
     {
         public int balance { get; set; }
         public List<Entry> entries { get; set; }
