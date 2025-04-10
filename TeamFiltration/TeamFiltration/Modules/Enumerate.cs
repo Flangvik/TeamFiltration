@@ -303,13 +303,23 @@ namespace TeamFiltration.Modules
 
                 var dehashedData = await dehashedHandler.FetchDomainEntries(args.GetValue("--domain"));
 
-                foreach (var email in dehashedData.entries.Select(x => x.email).Distinct().Where(a => Helpers.Generic.IsValidEmail(a)))
+                if(dehashedData.total == 0)
+                {
+                    _databaseHandle.WriteLog(new Log("ENUM", $"Dehashed search returned no results!", ""));
+                    Environment.Exit(0);
+                }
+                    
+
+                var validEmailAccounts = dehashedData.entries.Select(x => x.email.FirstOrDefault()).Distinct().Where(a => Helpers.Generic.IsValidEmail(a));
+                foreach (var email in validEmailAccounts)
                 {
                     _databaseHandle.WriteLog(new Log("ENUM", $"{email} valid!", ""));
                     _databaseHandle.WriteValidAcc(new ValidAccount() { Username = email, Id = Helpers.Generic.StringToGUID(email).ToString(), objectId = "" });
 
                 }
-                //Pull out all the usernames and smack them into the DB
+
+                _databaseHandle.WriteLog(new Log("ENUM", $"Added {validEmailAccounts.Count()} emails from Dehashed to Database as valid accounts", ""));
+                Environment.Exit(0);
 
             }
             else if (args.Contains("--domain"))
@@ -427,7 +437,7 @@ namespace TeamFiltration.Modules
 
             try
             {
-                if (options.ValidateAccsO365 || options.ValidateAccsTeams || options.ValidateAccsLogin)
+                if (options.ValidateAccsO365 || options.ValidateAccsTeams || options.ValidateAccsLogin || options.ValidateAccsOneDrive)
                 {
 
 
