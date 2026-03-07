@@ -1,4 +1,4 @@
-﻿using Dasync.Collections;
+using Dasync.Collections;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -108,6 +108,7 @@ namespace TeamFiltration.Modules
 			var _mainMSOLHandler = new MSOLHandler(teamFiltrationConfig, "SPRAY", _databaseHandler);
 
 			var validSprayAttempts = new List<SprayAttempt>() { };
+			var maxDop = delayInSeconds > 0 ? 1 : 20;
 			await sprayAttempts.ParallelForEachAsync(
 				  async sprayAttempt =>
 				  {
@@ -177,7 +178,8 @@ namespace TeamFiltration.Modules
 							  validSprayAttempts.Add(sprayAttempt);
 
 						  _databaseHandler.WriteSprayAttempt(sprayAttempt, teamFiltrationConfig);
-						  Thread.Sleep(delayInSeconds * 1000);
+						  if (delayInSeconds > 0)
+							  await Task.Delay(delayInSeconds * 1000);
 					  }
 					  catch (Exception ex)
 					  {
@@ -186,7 +188,7 @@ namespace TeamFiltration.Modules
 					  }
 					  _databaseHandler._globalDatabase.Checkpoint();
 				  },
-							maxDegreeOfParallelism: 20);
+							maxDegreeOfParallelism: maxDop);
 
 
 
@@ -274,12 +276,12 @@ namespace TeamFiltration.Modules
 				delayInSeconds = 0;
 			}
 
-			databaseHandle.WriteLog(new Log("SPRAY", $"Sleeping between {sleepInMinutesMin}-{sleepInMinutesMax} minutes for each round"!));
+			databaseHandle.WriteLog(new Log("SPRAY", $"Sleeping between {sleepInMinutesMin}-{sleepInMinutesMax} minutes for each round"));
 
 			if (!string.IsNullOrEmpty(exludeListPath))
 			{
 				excludeList = File.ReadAllLines(exludeListPath).Select(x => x.ToLower().Trim()).ToArray();
-				databaseHandle.WriteLog(new Log("SPRAY", $"Excluding {excludeList.Count()} emails"!));
+				databaseHandle.WriteLog(new Log("SPRAY", $"Excluding {excludeList.Count()} emails"));
 			}
 
 			if (string.IsNullOrEmpty(passwordListPath))
@@ -305,8 +307,33 @@ namespace TeamFiltration.Modules
 			else if (File.Exists(passwordListPath))
 				passwordList = File.ReadAllLines(passwordListPath).Where(x => !string.IsNullOrEmpty(x)).ToList();
 
-			//Get a list of valid users from the DB
-			string[] userNameListGlobal = databaseHandle.QueryValidAccount().Select(x => x.Username.ToLower()).Distinct().ToArray();
+			// Build username list:
+			// - If --usernames is supplied, use it.
+			// - Otherwise, use valid accounts already stored in the DB (from --enum).
+			var usernameListPath = args.GetValue("--usernames");
+			string[] userNameListGlobal = Array.Empty<string>();
+			if (!string.IsNullOrEmpty(usernameListPath) && File.Exists(usernameListPath))
+			{
+				userNameListGlobal = File.ReadAllLines(usernameListPath)
+					.Select(x => (x ?? "").Trim().ToLowerInvariant())
+					.Where(x => !string.IsNullOrWhiteSpace(x))
+					.Distinct()
+					.ToArray();
+			}
+			else
+			{
+				userNameListGlobal = databaseHandle.QueryValidAccount()
+					.Where(x => !string.IsNullOrWhiteSpace(x?.Username))
+					.Select(x => x.Username.Trim().ToLowerInvariant())
+					.Distinct()
+					.ToArray();
+			}
+
+			if (userNameListGlobal.Length == 0)
+			{
+				databaseHandle.WriteLog(new Log("SPRAY", "No usernames available. Provide `--usernames <file>` or run `--enum` first.", ""));
+				Environment.Exit(0);
+			}
 
 			//Pick the first user to enumerate some basic information about the Tenant
 			var getUserRealmResult = await Helpers.Generic.CheckUserRealm(userNameListGlobal.FirstOrDefault(), _globalProperties);

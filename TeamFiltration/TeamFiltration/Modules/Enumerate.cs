@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -518,6 +518,23 @@ namespace TeamFiltration.Modules
 							_databaseHandle.WriteLog(new Log("ENUM", $"Successfully got Teams token for sacrificial account", ""));
 
 							TeamsHandler teamsHandler = new TeamsHandler(teamsToken.bearerToken, _globalProperties);
+
+							// Try to pick the right Teams region. Some tenants fail on the wrong region.
+							var candidateRegions = new[] { "emea", "amer", "apac" };
+							foreach (var r in candidateRegions)
+							{
+								try
+								{
+									teamsHandler.SetRegion(r);
+									var probe = await teamsHandler.EnumUser(_globalProperties.TeamFiltrationConfig.SacrificialO365Username, "https://teams.microsoft.com/api/mt/");
+									if (probe.isValid)
+									{
+										_databaseHandle.WriteLog(new Log("ENUM", $"Using Teams region '{r}'", ""));
+										break;
+									}
+								}
+								catch { }
+							}
 
 							//Pull out objectId's
 							var previusValidAccs = _databaseHandle.QueryValidAccount();

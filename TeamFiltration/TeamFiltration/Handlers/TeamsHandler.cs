@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,7 +24,8 @@ namespace TeamFiltration.Handlers
         // EMEA = EU
         // AMER = US
 
-        public static string TeamsRegion = "amer";
+        // Default region. Real region is tenant-dependent; caller may override.
+        public string TeamsRegion { get; private set; } = "amer";
 
         public TeamsHandler(BearerTokenResp getBearToken, GlobalArgumentsHandler teamFiltrationConfig)
         {
@@ -39,6 +40,7 @@ namespace TeamFiltration.Handlers
             var httpClientHandler = new HttpClientHandler
             {
                 Proxy = proxy,
+                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate | DecompressionMethods.Brotli,
                 ServerCertificateCustomValidationCallback = (message, xcert, chain, errors) =>
                 {
                     return true;
@@ -56,8 +58,18 @@ namespace TeamFiltration.Handlers
             _teamsClient.DefaultRequestHeaders.Add("x-ms-client-version", "27/1.0.0.2021011237");
             _teamsClient.DefaultRequestHeaders.Add("Referer", "https://teams.microsoft.com/_");
             _teamsClient.DefaultRequestHeaders.Add("ClientInfo", "os=Android; osVer=7.1.2; proc=x86; lcid=en-US; deviceType=2; country=US; clientName=microsoftteams; clientVer=1416/1.0.0.2021012201; utcOffset=+01:00");
+            _teamsClient.DefaultRequestHeaders.AcceptEncoding.ParseAdd("gzip, deflate, br");
         }
 
+        public void SetRegion(string region)
+        {
+            if (string.IsNullOrWhiteSpace(region))
+                return;
+
+            region = region.Trim().ToLowerInvariant();
+            if (region is "amer" or "emea" or "apac")
+                TeamsRegion = region;
+        }
 
         public async Task<TeamsFileResp> GetRecentFiles(string module)
         {
@@ -165,7 +177,10 @@ namespace TeamFiltration.Handlers
 
         failedResp:
             //TODO:Add logic to select FireProx endpoint based on current location 
-            var enumUserReq = await _teamsClient.GetAsync(enumUserUrl + $"{TeamsRegion}/beta/users/{username}/externalsearchv3");
+            var safeBase = (enumUserUrl ?? "").TrimEnd('/');
+            var safeUser = Uri.EscapeDataString(username ?? "");
+            var enumUrl = $"{safeBase}/{TeamsRegion}/beta/users/{safeUser}/externalsearchv3?includeTFLUsers=true";
+            var enumUserReq = await _teamsClient.GetAsync(enumUrl);
             if (enumUserReq.IsSuccessStatusCode)
             {
 
@@ -235,13 +250,11 @@ namespace TeamFiltration.Handlers
             }
             else if (enumUserReq.StatusCode.Equals(HttpStatusCode.Forbidden))
             {
-                //We got an 200 OK response
                 var userResp = await enumUserReq.Content.ReadAsStringAsync();
 
                 if (userResp.Equals("{\"errorCode\":\"Forbidden\"}"))
-                    //As of 24.04.2023 - Seems like MS have patched this.
-                    //return (false, "", null, null);
-                    return (true, "", null, null);
+                    // Treat as non-valid. Returning "valid" breaks sanity checks and makes this method unusable.
+                    return (false, "", null, null);
             }
             else if (enumUserReq.StatusCode.Equals(HttpStatusCode.InternalServerError))
             {
