@@ -55,7 +55,7 @@ namespace TeamFiltration.Handlers
 
                     return true;
                 },
-                SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls,
+                SslProtocols = SslProtocols.None,
                 UseProxy = teamFiltrationConfig.DebugMode
             };
 
@@ -73,7 +73,7 @@ namespace TeamFiltration.Handlers
                 {
                     return true;
                 },
-                SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls,
+                SslProtocols = SslProtocols.None,
 
             };
 

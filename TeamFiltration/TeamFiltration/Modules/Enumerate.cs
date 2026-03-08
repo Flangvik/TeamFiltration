@@ -268,7 +268,7 @@ namespace TeamFiltration.Modules
 
 			if (options.ValidateAccsLogin == false && options.ValidateAccsO365 == false && options.ValidateAccsTeams == false && options.Dehashed == false && getTenantInfo == false && options.ValidateAccsOneDrive == false)
 			{
-				_databaseHandle.WriteLog(new Log("[+]", $"Please select an validation options! (eg --validate-teams) ", ""));
+				_databaseHandle.WriteLog(new Log("[+]", $"Please select a validation option! (e.g. --validate-teams) ", ""));
 				Environment.Exit(0);
 			}
 
@@ -292,7 +292,7 @@ namespace TeamFiltration.Modules
 				}
 				else
 				{
-					_databaseHandle.WriteLog(new Log("[!]", $"Usernames list provided is emtpy!", ""));
+					_databaseHandle.WriteLog(new Log("[!]", $"Usernames list provided is empty!", ""));
 					Environment.Exit(0);
 				}
 			}
@@ -305,7 +305,10 @@ namespace TeamFiltration.Modules
 
 				if (dehashedData.total == 0)
 				{
-					_databaseHandle.WriteLog(new Log("ENUM", $"Dehashed search returned no results!", ""));
+					if (dehashedData.balance == 0 && dehashedData.entries?.Count == 0)
+						_databaseHandle.WriteLog(new Log("ENUM", $"DeHashed returned no data — this may indicate an API error (check messages above) or no breach records for this domain.", ""));
+					else
+						_databaseHandle.WriteLog(new Log("ENUM", $"DeHashed search returned no results for this domain.", ""));
 					Environment.Exit(0);
 				}
 
@@ -318,7 +321,7 @@ namespace TeamFiltration.Modules
 
 				}
 
-				_databaseHandle.WriteLog(new Log("ENUM", $"Added {validEmailAccounts.Count()} emails from Dehashed to Database as valid accounts", ""));
+				_databaseHandle.WriteLog(new Log("ENUM", $"Added {validEmailAccounts.Count()} emails from DeHashed to database as valid accounts", ""));
 				Environment.Exit(0);
 
 			}
@@ -334,7 +337,7 @@ namespace TeamFiltration.Modules
 					{
 						return true;
 					},
-					SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls
+					SslProtocols = SslProtocols.None
 				};
 
 
@@ -444,7 +447,7 @@ namespace TeamFiltration.Modules
 					IEnumerable<string> currentValidAccounts = _databaseHandle.QueryValidAccount().Where(a => a != null).Select(x => x?.Username?.ToLower()).ToList();
 					IEnumerable<string> currentInvalidAccounts = _databaseHandle.QueryInvalidAccount().Select(x => x.Username.ToLower()).ToList();
 
-					_databaseHandle.WriteLog(new Log("ENUM", $"Filtering out previusly attempted accounts", ""));
+					_databaseHandle.WriteLog(new Log("ENUM", $"Filtering out previously attempted accounts", ""));
 
 					userListData = userListData.Except(currentValidAccounts).ToArray();
 					userListData = userListData.Except(currentInvalidAccounts).ToArray();
@@ -490,12 +493,10 @@ namespace TeamFiltration.Modules
 					}
 					else
 					{
-						_databaseHandle.WriteLog(new Log("ENUM", "O365 validation method unavailable for this tentant, try teams method!"));
+						_databaseHandle.WriteLog(new Log("ENUM", "O365 validation method unavailable for this tenant, try the Teams method!"));
 
 					}
 
-
-					// await _globalProperties._awsHandler.DeleteFireProxEndpoint(enumUserUrl.Item1.RestApiId, enumUserUrl.Item2.Region);
 				}
 				else if (options.ValidateAccsTeams)
 				{
@@ -557,7 +558,7 @@ namespace TeamFiltration.Modules
 
 							(Amazon.APIGateway.Model.CreateDeploymentRequest, Models.AWS.FireProxEndpoint, string fireProxUrl) enumUserUrl = _globalProperties.GetFireProxURLObject("https://teams.microsoft.com/api/mt/", (new Random()).Next(0, _globalProperties.AWSRegions.Length));
 
-							//Perfom an sanity check to make sure we can validate anything for this tenant at all
+							//Perform a sanity check to make sure we can validate anything for this tenant at all
 
 							var sanityCheck = await ValidUserWrapperTeams(teamsHandler, "ThisUserShouldNotExist@" + userListData.FirstOrDefault().Split('@')[1], enumUserUrl.fireProxUrl);
 							if (sanityCheck == true)
@@ -576,8 +577,6 @@ namespace TeamFiltration.Modules
 								   maxDegreeOfParallelism: 300);
 							}
 
-
-							//await _globalProperties._awsHandler.DeleteFireProxEndpoint(enumUserUrl.Item1.RestApiId, enumUserUrl.Item2.Region);
 
 						}
 						else
@@ -610,9 +609,6 @@ namespace TeamFiltration.Modules
 					if (string.IsNullOrEmpty(tenant_name))
 						await oneDriveEnumHandler.enumTenantName();
 
-					//For now let's not use the fireprox endpoints for this method
-					//(Amazon.APIGateway.Model.CreateDeploymentRequest, Models.AWS.FireProxEndpoint, string fireProxUrl) enumUserUrl = _globalProperties.GetFireProxURLObject("https://teams.microsoft.com/api/mt/", (new Random()).Next(0, _globalProperties.AWSRegions.Length));
-
 					await userListData.ParallelForEachAsync(
 					   async user =>
 					   {
@@ -622,11 +618,7 @@ namespace TeamFiltration.Modules
 
 
 
-					//await _globalProperties._awsHandler.DeleteFireProxEndpoint(enumUserUrl.Item1.RestApiId, enumUserUrl.Item2.Region);
-
-
-
-				}
+					}
 				else if (options.ValidateAccsLogin)
 				{
 					var approxTime = (int)Math.Round(TimeSpan.FromSeconds((userListData.Count() / 100)).TotalMinutes);
@@ -648,8 +640,7 @@ namespace TeamFiltration.Modules
 
 
 
-					//await _globalProperties._awsHandler.DeleteFireProxEndpoint(enumUserUrl.Item1.RestApiId, enumUserUrl.Item2.Region);
-				}
+					}
 
 
 			}

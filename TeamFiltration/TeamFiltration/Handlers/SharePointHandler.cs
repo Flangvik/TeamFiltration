@@ -1,5 +1,4 @@
-﻿using KoenZomers.OneDrive.Api;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -48,7 +47,7 @@ namespace TeamFiltration.Handlers
 				{
 					return true;
 				},
-				SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls,
+				SslProtocols = SslProtocols.None,
 				UseProxy = debugMode
 			};
 

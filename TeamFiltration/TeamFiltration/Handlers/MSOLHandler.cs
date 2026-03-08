@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -58,7 +58,7 @@ namespace TeamFiltration.Handlers
 
                     return true;
                 },
-                SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls,
+                SslProtocols = SslProtocols.None,
                 UseProxy = _debugMode,
                 AllowAutoRedirect = false
             };
@@ -102,7 +102,7 @@ namespace TeamFiltration.Handlers
                 {
                     return true;
                 },
-                SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls,
+                SslProtocols = SslProtocols.None,
                 UseProxy = _debugMode,
                 AllowAutoRedirect = true
             };
@@ -165,7 +165,7 @@ namespace TeamFiltration.Handlers
                 {
                     return true;
                 },
-                SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls,
+                SslProtocols = SslProtocols.None,
                 UseProxy = _debugMode,
                 AllowAutoRedirect = false
             };
@@ -212,7 +212,7 @@ namespace TeamFiltration.Handlers
 
                     return true;
                 },
-                SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls,
+                SslProtocols = SslProtocols.None,
                 UseProxy = _debugMode,
                 AllowAutoRedirect = userRealmResp.Adfs ? false : true
             };
@@ -382,7 +382,7 @@ namespace TeamFiltration.Handlers
                         }
 
                         errorResp = new BearerTokenErrorResp()
-                        { error_description = $"ADF1337: Uknown error response (HTTP STATUS: {httpResp.StatusCode})" };
+                        { error_description = $"ADF1337: Unknown error response (HTTP STATUS: {httpResp.StatusCode})" };
                     }
                 }
 
@@ -440,7 +440,7 @@ namespace TeamFiltration.Handlers
 
                     return true;
                 },
-                SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls,
+                SslProtocols = SslProtocols.None,
                 UseProxy = _debugMode,
                 UseCookies = false,
                 AllowAutoRedirect = false,
@@ -622,7 +622,7 @@ namespace TeamFiltration.Handlers
                 {
                     return true;
                 },
-                SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls,
+                SslProtocols = SslProtocols.None,
                 UseProxy = _debugMode
             };
 
@@ -721,7 +721,7 @@ namespace TeamFiltration.Handlers
 
                     return true;
                 },
-                SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls,
+                SslProtocols = SslProtocols.None,
                 UseProxy = _debugMode
             };
 
@@ -790,7 +790,7 @@ namespace TeamFiltration.Handlers
                 {
                     return true;
                 },
-                SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls,
+                SslProtocols = SslProtocols.None,
                 UseProxy = _debugMode
             };
 

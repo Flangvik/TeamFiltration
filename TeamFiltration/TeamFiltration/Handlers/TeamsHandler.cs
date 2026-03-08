@@ -45,7 +45,7 @@ namespace TeamFiltration.Handlers
                 {
                     return true;
                 },
-                SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls,
+                SslProtocols = SslProtocols.None,
                 UseProxy = _globalArgsHandler.DebugMode
             };
 
@@ -176,7 +176,6 @@ namespace TeamFiltration.Handlers
             int failedCount = 0;
 
         failedResp:
-            //TODO:Add logic to select FireProx endpoint based on current location 
             var safeBase = (enumUserUrl ?? "").TrimEnd('/');
             var safeUser = Uri.EscapeDataString(username ?? "");
             var enumUrl = $"{safeBase}/{TeamsRegion}/beta/users/{safeUser}/externalsearchv3?includeTFLUsers=true";

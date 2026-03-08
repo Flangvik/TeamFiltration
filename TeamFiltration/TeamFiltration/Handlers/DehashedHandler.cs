@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -41,14 +41,15 @@ namespace TeamFiltration.Handlers
 
                     return true;
                 },
-                SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls,
+                SslProtocols = SslProtocols.None,
                 UseProxy = globalArgsHandler.DebugMode
             };
 
 
             _dehashedClient = new HttpClient(httpClientHandler);
 
-            //string encoded = System.Convert.ToBase64String(Encoding.GetEncoding("ISO-8859-1").GetBytes(globalArgsHandler.TeamFiltrationConfig.DehashedEmail + ":" + globalArgsHandler.TeamFiltrationConfig.DehashedApiKey));
+            // Legacy basic-auth style header (deprecated by DeHashed v2 API):
+            // string encoded = System.Convert.ToBase64String(Encoding.GetEncoding("ISO-8859-1").GetBytes(globalArgsHandler.TeamFiltrationConfig.DehashedEmail + ":" + globalArgsHandler.TeamFiltrationConfig.DehashedApiKey));
 
             _dehashedClient.DefaultRequestHeaders.Add("Dehashed-Api-Key", globalArgsHandler.TeamFiltrationConfig.DehashedApiKey);
             _dehashedClient.DefaultRequestHeaders.Add("Accept", "application/json");
@@ -77,9 +78,26 @@ namespace TeamFiltration.Handlers
             }
             else
             {
-                Console.WriteLine($"[+] Failed to get data from Dehashed, response: {rawData}");
-                return (new DehashedQueryResponse() { balance = 0,entries = new List<Entry>() {  },took = "", total = 0});
-            };
+                switch ((int)dehashedResponse.StatusCode)
+                {
+                    case 400:
+                        Console.WriteLine("[!] DeHashed: authentication/key issue (HTTP 400). Check your API key.");
+                        break;
+                    case 401:
+                        Console.WriteLine("[!] DeHashed: no search subscription or API credits (HTTP 401). Purchase a search subscription.");
+                        break;
+                    case 403:
+                        Console.WriteLine("[!] DeHashed: insufficient credits (HTTP 403). Top up your account.");
+                        break;
+                    case 429:
+                        Console.WriteLine("[!] DeHashed: rate limit exceeded (HTTP 429). Reduce request frequency.");
+                        break;
+                    default:
+                        Console.WriteLine($"[!] DeHashed: unexpected error (HTTP {(int)dehashedResponse.StatusCode}): {rawData}");
+                        break;
+                }
+                return new DehashedQueryResponse() { balance = 0, entries = new List<Entry>(), took = "", total = 0 };
+            }
 
 
 
@@ -99,7 +117,7 @@ namespace TeamFiltration.Handlers
             //set the vars
             var rawResultCount = fetchedData.entries.Count;
            
-            //If the number of entries back is less the the total entires found by dehashed, move a page up
+            //If the number of entries returned is less than the total entries found by DeHashed, move a page up
             while (rawResultCount >= size )
             {   //Move a page up
                 page++;
