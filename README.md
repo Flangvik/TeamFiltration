@@ -61,7 +61,7 @@ Usage:
 
          --username            Override to target a given username that does not exist in the database
          --password            Override to target a given password that does not exist in the database
-         --tokens              Override to target a (file with newline seperated JWT tokens|single JWT| , seperated JWT tokens) and perfom exfiltration
+         --tokens              Override to target a (file with newline separated JWT tokens|single JWT| , separated JWT tokens) and perform exfiltration
          --cookie-dump         Override to target a given account using it's refresh-cookie-collection
 
          --all                 Exfiltrate information from ALL SSO resources (Graph, OWA, SharePoint, OneDrive, Teams)
@@ -80,7 +80,7 @@ Usage:
 
          --passwords           Path to a list of passwords, common weak-passwords will be generated if not supplied
          --exclude             Path to a list of emails to exclude from spraying
-         --seasons-only        Password genersated for spraying will only be based on seasons
+         --seasons-only        Password generated for spraying will only be based on seasons
          --months-only         Password generated for spraying will only be based on months
          --common-only         Spray with the top 20 most common passwords
          --shuffle-passwords   Shuffle the passwordlist before spraying
@@ -92,14 +92,14 @@ Usage:
          --sleep-min           Minimum minutes to sleep between each full rotation of spraying default=60
          --sleep-max           Maximum minutes to sleep between each full rotation of spraying default=100
          --jitter              Seconds between each individual authentication attempt. default=0
-         --time-window         Defines a time windows where spraying should accour, in the military time format <12:00-19:00>
+         --time-window         Defines a time window where spraying should occur, in the military time format <12:00-19:00>
          --push                Get Pushover notifications when valid credentials are found (requires pushover keys in config)
          --push-locked         Get Pushover notifications when an sprayed account gets locked (requires pushover keys in config)
          --force               Force the spraying to proceed even if there is less the <sleep> time since the last attempt
 
    --enum        Load the enumeration module
 
-         --domain              Domain to perfom enumeration against, names pulled from statistically-likely-usernames if not provided with --usernames
+         --domain              Domain to perform enumeration against, names pulled from statistically-likely-usernames if not provided with --usernames
          --usernames           Path to a list of usernames to enumerate (emails)
          --dehashed            Use the dehashed submodule in order to enumerate emails from a basedomain
          --validate-msol       Validate that the given o365 accounts exists using the public GetCredentialType method (Very RateLimited - Slow 20 e/s)

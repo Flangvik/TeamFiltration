@@ -98,9 +98,9 @@ namespace TeamFiltration.Handlers
 
 			// Set default user agent if missing
 			if (string.IsNullOrEmpty(TeamFiltrationConfig?.UserAgent))
-				TeamFiltrationConfig.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Teams/1.3.00.30866 Chrome/80.0.3987.165 Electron/8.5.1 Safari/537.36";
+				TeamFiltrationConfig.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0";
 
-			// Set default user agent if missing
+			// Set default proxy endpoint if missing
 			if (string.IsNullOrEmpty(TeamFiltrationConfig?.proxyEndpoint))
 				TeamFiltrationConfig.proxyEndpoint = "http://127.0.0.1:8080";
 
@@ -123,7 +123,7 @@ namespace TeamFiltration.Handlers
 			}
 
 
-			//Do AWS FireProx generation checks
+			// Initialize AWS handler if credentials are present (used for legacy FireProx support)
 			if (!string.IsNullOrEmpty(TeamFiltrationConfig?.AWSSecretKey) && !string.IsNullOrEmpty(TeamFiltrationConfig?.AWSAccessKey))
 			{
 				_awsHandler = new AWSHandler(this.TeamFiltrationConfig.AWSAccessKey, this.TeamFiltrationConfig.AWSSecretKey, this.TeamFiltrationConfig.AWSSessionToken, databaseHandler);

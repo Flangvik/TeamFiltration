@@ -1,4 +1,4 @@
-﻿using ConsoleTables;
+using ConsoleTables;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -100,7 +100,7 @@ namespace TeamFiltration.Modules
 
 					if (selection.Contains("summary"))
 					{
-						//We need to make a usefull datastructure for this
+						//We need to make a useful data structure for this
 						var sprayAttempts = _dataBaseHandler.QueryAllSprayAttempts().Select(x => x).ToList();
 
 						var spraySummaryList = new List<SpraySummary>() { };
@@ -194,42 +194,8 @@ namespace TeamFiltration.Modules
 					}
 					else if (selection[0].ToLower().Equals("delete"))
 					{
-						// Note: This probably will not be called since we don't use fireprox anymore.
-						Console.WriteLine("[+] The 'delete' is disabled because FireProx functionality has been removed.");
-						/*                        //Thanks Chris!
-												if (_globalProperties.TeamFiltrationConfig == null)
-												{
-													Console.WriteLine("[!] In order to delete a fireprox endpoint you must provide the configuration file using '--config'");
-													Environment.Exit(0);
-												}
-												if (string.IsNullOrEmpty(_globalProperties.TeamFiltrationConfig?.AWSAccessKey) || string.IsNullOrEmpty(_globalProperties.TeamFiltrationConfig?.AWSSecretKey))
-												{
-													Console.WriteLine("[!] Missing AWSAccessKey, AWSSecretKey, and/or AWSSessionToken, must be provided in the configuration file using '--config'");
-													Environment.Exit(0);
-												}
-
-												if (selection[1].ToLower().Equals("*"))
-												{
-													//Delete ALL fireprox instances found in the DB
-													var fireproxEndpoints = _dataBaseHandler.QueryAllFireProxEndpoints().Select(x => x).ToList();
-													foreach (var fireproxEndpoint in fireproxEndpoints)
-													{
-														//There must be a way to bul delete endpoints?
-														_globalProperties._awsHandler.DeleteFireProxEndpoint(fireproxEndpoint.RestApiId, fireproxEndpoint.Region).GetAwaiter().GetResult();
-														Thread.Sleep(1000);
-													}
-
-												}
-
-												else if (selection[1].Length == 10)
-												{
-													//delete fireprox instance based on ID and region
-													if (Amazon.RegionEndpoint.GetBySystemName(selection[2]) != null)
-														_globalProperties._awsHandler.DeleteFireProxEndpoint(selection[1].ToLower(), selection[2]).GetAwaiter().GetResult();
-													else
-														Console.WriteLine("[!] Failed to parse region, example: 'delete aabbccddee us-west-1'");
-												}
-						*/
+						Console.WriteLine("[+] The 'delete' command is no longer supported.");
+						
 					}
 					else if (selection[0].ToLower().Equals("exit"))
 					{

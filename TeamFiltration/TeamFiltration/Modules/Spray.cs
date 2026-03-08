@@ -130,7 +130,7 @@ namespace TeamFiltration.Modules
 						  }
 						  else if (!string.IsNullOrWhiteSpace(loginResp.bearerTokenError?.error_description) && userRealmResp.Adfs)
 						  {
-							  if (loginResp.bearerTokenError.error_description.Contains("User does not exsists?"))
+							  if (loginResp.bearerTokenError.error_description.Contains("User does not exists?"))
 								  sprayAttempt.Disqualified = true;
 
 							  _databaseHandler.WriteLog(new Log("SPRAY", $"Sprayed {sprayAttempt.Username}:{sprayAttempt.Password} => {loginResp.bearerTokenError?.error_description}", sprayAttempt.FireProxRegion), true, true);
@@ -355,7 +355,7 @@ namespace TeamFiltration.Modules
 			if (getUserRealmResult.Adfs && !_globalProperties.AADSSO)
 			{
 				databaseHandle.WriteLog(new Log("SPRAY", $"ADFS federation detected => {getUserRealmResult.ThirdPartyAuthUrl}"));
-				databaseHandle.WriteLog(new Log("SPRAY", $"TeamFiltration ADFS support in beta, be carefull :) "));
+				databaseHandle.WriteLog(new Log("SPRAY", $"TeamFiltration ADFS support in beta, be careful :) "));
 				_globalProperties.ADFS = true;
 
 			}
@@ -522,21 +522,11 @@ namespace TeamFiltration.Modules
 			//If i get to this point without any spray items in listOfSprayAttempts,i have nothing left
 			if (listOfSprayAttempts.Count() == 0)
 			{
-				foreach (var fireProxObject in fireProxList)
-				{
-					//await _globalProperties._awsHandler.DeleteFireProxEndpoint(fireProxObject.Item1.RestApiId, fireProxObject.Item2.Region);
-					Environment.Exit(0);
-				}
+				Environment.Exit(0);
 			}
 
 
 			var validAccounts = await SprayAttemptWrap(listOfSprayAttempts, _globalProperties, databaseHandle, getUserRealmResult, delayInSeconds, regionCounter);
-
-			foreach (var fireProxObject in fireProxList)
-			{
-				//await _globalProperties._awsHandler.DeleteFireProxEndpoint(fireProxObject.Item1.RestApiId, fireProxObject.Item2.Region);
-			}
-
 
 			if (autoExfilBool && validAccounts.Count() > 0)
 			{

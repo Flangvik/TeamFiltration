@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -22,7 +22,7 @@ namespace TeamFiltration
             Console.WriteLine("   --exfil       Load the exfiltration module\n");
             Console.WriteLine("         --username            Override to target a given username that does not exist in the database");
             Console.WriteLine("         --password            Override to target a given password that does not exist in the database");
-            Console.WriteLine("         --tokens              Override to target a (file with newline seperated JWT tokens|single JWT| , seperated JWT tokens) and perfom exfiltration");
+            Console.WriteLine("         --tokens              Override to target a (file with newline separated JWT tokens|single JWT| , separated JWT tokens) and perform exfiltration");
             Console.WriteLine("         --roadtools           Override to target a the default JSON structure found in ROADTools auth file (.roadtools_auth)");
             Console.WriteLine("         --cookie-dump         Override to target a given account using it's refresh-cookie-collection\n");
             Console.WriteLine("         --all                 Exfiltrate information from ALL SSO resources (Graph, OWA, SharePoint, OneDrive, Teams)");
@@ -40,7 +40,7 @@ namespace TeamFiltration
 
             Console.WriteLine("         --passwords           Path to a list of passwords, common weak-passwords will be generated if not supplied");
             Console.WriteLine("         --exclude             Path to a list of emails to exclude from spraying");
-            Console.WriteLine("         --seasons-only        Password genersated for spraying will only be based on seasons");
+            Console.WriteLine("         --seasons-only        Password generated for spraying will only be based on seasons");
             Console.WriteLine("         --months-only         Password generated for spraying will only be based on months");
             Console.WriteLine("         --common-only         Spray with the top 20 most common passwords");
             Console.WriteLine("         --shuffle-passwords   Shuffle the passwordlist before spraying");
@@ -52,13 +52,13 @@ namespace TeamFiltration
             Console.WriteLine("         --sleep-min           Minimum minutes to sleep between each full rotation of spraying default=60");
             Console.WriteLine("         --sleep-max           Maximum minutes to sleep between each full rotation of spraying default=100");
             Console.WriteLine("         --jitter              Seconds between each individual authentication attempt. default=0");
-            Console.WriteLine("         --time-window         Defines a time windows where spraying should accour, in the military time format <12:00-19:00>");
+            Console.WriteLine("         --time-window         Defines a time window where spraying should occur, in the military time format <12:00-19:00>");
             Console.WriteLine("         --push                Get Pushover notifications when valid credentials are found (requires pushover keys in config)");
             Console.WriteLine("         --push-locked         Get Pushover notifications when an sprayed account gets locked (requires pushover keys in config)");
             Console.WriteLine("         --force               Force the spraying to proceed even if there is less the <sleep> time since the last attempt\n");
 
             Console.WriteLine("   --enum        Load the enumeration module\n");
-            Console.WriteLine("         --domain              Domain to perfom enumeration against, names pulled from statistically-likely-usernames if not provided with --usernames");
+            Console.WriteLine("         --domain              Domain to perform enumeration against, names pulled from statistically-likely-usernames if not provided with --usernames");
             Console.WriteLine("         --usernames           Path to a list of usernames to enumerate (emails)");
             Console.WriteLine("         --tenant-info         Enumerates tenant and domain information (Based on Invoke-AADIntReconAsOutsider from AADInternal)");
             Console.WriteLine("         --dehashed            Use the dehashed submodule in order to enumerate emails from a basedomain");
