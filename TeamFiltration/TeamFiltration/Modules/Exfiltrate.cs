@@ -13,8 +13,6 @@ using System.IO;
 using TeamFiltration.Handlers;
 using TeamFiltration.Models.TeamFiltration;
 using TeamFiltration.Helpers;
-using KoenZomers.OneDrive.Api;
-using KoenZomers.OneDrive.Api.Entities;
 using Dasync.Collections;
 using TeamFiltration.Models.Graph;
 using System.Net;
@@ -1028,7 +1026,7 @@ namespace TeamFiltration.Modules
 					var oneDriveHandler = new OneDriveHandler(msGraphToken.bearerToken, username, _globalProperties, _databaseHandler);
 
 					//Pretty sure this can be done without Auth
-					SharePointSite siteRoot = await oneDriveHandler.GetSiteRoot();
+					var siteRoot = await oneDriveHandler.GetSiteRoot();
 
 					if (siteRoot != null)
 					{
@@ -1079,7 +1077,7 @@ namespace TeamFiltration.Modules
 					var oneDriveHandler = new OneDriveHandler(msGraphToken.bearerToken, username, _globalProperties, _databaseHandler);
 
 
-					SharePointSite siteRoot = await oneDriveHandler.GetSiteRoot();
+					var siteRoot = await oneDriveHandler.GetSiteRoot();
 
 					//Get the tokens neede if we don't already have them
 					if (companySharePointToken.bearerToken?.access_token == null)

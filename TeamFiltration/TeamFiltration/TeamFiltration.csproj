@@ -26,11 +26,6 @@
     <RuntimeHostConfigurationOption Include="System.Net.DisableIPv6" Value="true" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Compile Remove="Models\OneDrive\**" />
-    <EmbeddedResource Remove="Models\OneDrive\**" />
-    <None Remove="Models\OneDrive\**" />
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="AsyncEnumerator" Version="4.0.2" />
@@ -45,10 +40,6 @@
     <PackageReference Include="System.Data.SQLite" Version="1.0.119" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.6.1" />
     <PackageReference Include="TimeZoneConverter" Version="7.0.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\OneDriveAPI\API.csproj" />
   </ItemGroup>
 
   <ItemGroup>
