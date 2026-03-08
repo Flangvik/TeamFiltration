@@ -1,6 +1,5 @@
 ﻿using Dasync.Collections;
-using KoenZomers.OneDrive.Api;
-using KoenZomers.OneDrive.Api.Entities;
+using TeamFiltration.Models.OneDrive;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -23,7 +22,7 @@ namespace TeamFiltration.Handlers
     class OneDriveHandler
     {
         private HttpClient _oneDriveClient;
-        private OneDriveGraphApi _oneDrive;
+        private OneDriveGraphApiStub _oneDrive;
         private BearerTokenResp _getBearToken { get; set; }
         private DatabaseHandler _databaseHandler { get; set; }
         private string _username { get; set; }
@@ -40,7 +39,7 @@ namespace TeamFiltration.Handlers
 
             //We are teams!
 
-            _oneDrive = new OneDriveGraphApi("1fec8e78-bce4-4aaf-ab1b-5451cc387264");
+            _oneDrive = new OneDriveGraphApiStub("1fec8e78-bce4-4aaf-ab1b-5451cc387264", teamFiltrationConfig);
             _oneDrive.FireProxAuthUrl = teamFiltrationConfig.GetBaseUrl().Replace("/common/oauth2/token", "/common/oauth2/v2.0/token");
 
             if (string.IsNullOrEmpty(getBearToken.foci))
@@ -86,7 +85,7 @@ namespace TeamFiltration.Handlers
         }
 
 
-        private async Task EnumFolders(OneDriveItem oneDriveItem, OneDriveGraphApi oneDrive, string fullPath, int depth = 0)
+        private async Task EnumFolders(OneDriveItem oneDriveItem, OneDriveGraphApiStub oneDrive, string fullPath, int depth = 0)
         {
 
             var depthString = string.Concat(Enumerable.Repeat(" ", depth));
