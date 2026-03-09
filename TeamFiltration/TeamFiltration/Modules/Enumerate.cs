@@ -397,48 +397,70 @@ namespace TeamFiltration.Modules
 			{
 				try
 				{
+					// Fetch base data in parallel
+					var getUserRealmTask = msolHandler.GetUserRealm("randomuser@" + domain);
+					var getOpenIdConfigTask = msolHandler.GetOpenIdConfig(domain);
+					var getCredTypeTask = msolHandler.GetTenantCredentialType(domain);
+					await Task.WhenAll(getUserRealmTask, getOpenIdConfigTask, getCredTypeTask);
 
-					UserRealmLoginResp getUserRealm = await msolHandler.GetUserRealm("randomuser@" + domain);
-					Console.WriteLine($"[+] Tenant Brand: {getUserRealm.FederationBrandName}");
-					GetOpenIdConfigResp openIdConfig = await msolHandler.GetOpenIdConfig(domain);
-					//  Console.WriteLine($"Tenant Name: {}");
-					Console.WriteLine($"[+] Tenant Id: {openIdConfig.authorization_endpoint.Split("/")[3]}");
-					Console.WriteLine($"[+] Tenant region: {openIdConfig.tenant_region_scope}");
+					var getUserRealm = getUserRealmTask.Result;
+					var openIdConfig = getOpenIdConfigTask.Result;
+					var credType = getCredTypeTask.Result;
 
 					// ACS lookup: query by domain and tenant ID, union results
-					var tenantId = openIdConfig.authorization_endpoint?.Split('/')?[3];
+					var tenantId = openIdConfig?.authorization_endpoint?.Split('/')?[3];
 					var acsFromDomain = await msolHandler.GetAcsDomains(domain);
 					var acsFromTenantId = !string.IsNullOrEmpty(tenantId)
 						? await msolHandler.GetAcsDomains(tenantId)
 						: new List<string>();
-					var tenantDomains = acsFromDomain.Union(acsFromTenantId).Distinct()
+					var allAcsDomains = acsFromDomain.Union(acsFromTenantId).Distinct().ToList();
+
+					// Extract tenant name (e.g. "contoso" from "contoso.onmicrosoft.com")
+					var tenantName = allAcsDomains
+						.Where(d => d.EndsWith(".onmicrosoft.com") && !d.Contains(".mail.onmicrosoft.com"))
+						.Select(d => d.Replace(".onmicrosoft.com", ""))
+						.FirstOrDefault() ?? domain;
+
+					var tenantDomains = allAcsDomains
 						.Where(d => !d.EndsWith(".onmicrosoft.com") && !d.EndsWith(".windows.net"))
 						.OrderBy(d => d)
 						.ToList();
 
-					Console.WriteLine($"[+] Enumerating {tenantDomains.Count} Tenant Domains:");
+					bool seamlessSso = credType?.EstsProperties?.DesktopSsoEnabled ?? false;
 
-					List<UserRealmLoginResp> userRealmLoginRespList = new List<UserRealmLoginResp>();
+					// Print summary table
+					Console.WriteLine();
+					var summaryTable = new ConsoleTable("Property", "Value");
+					summaryTable.AddRow("Tenant Brand", getUserRealm?.FederationBrandName ?? "-");
+					summaryTable.AddRow("Tenant Name", tenantName + ".onmicrosoft.com");
+					summaryTable.AddRow("Tenant ID", tenantId ?? "-");
+					summaryTable.AddRow("Tenant Region", openIdConfig?.tenant_region_scope ?? "-");
+					summaryTable.AddRow("Seamless SSO", seamlessSso ? "Yes" : "No");
+					summaryTable.Configure(o => o.NumberAlignment = Alignment.Right).Write(Format.Alternative);
 
+					Console.WriteLine($"\n[+] Enumerating {tenantDomains.Count} tenant domain(s)...");
+
+					var userRealmLoginRespList = new List<UserRealmLoginResp>();
 					int conversationCount = 0;
 					int totalConversationCount = tenantDomains.Count;
 					using (var progress = new ProgressBar())
 					{
 						foreach (var tenantDomain in tenantDomains)
 						{
-							UserRealmLoginResp bufferGetUserRealm = await msolHandler.GetUserRealm("randomuser@" + tenantDomain);
+							var bufferGetUserRealm = await msolHandler.GetUserRealm("randomuser@" + tenantDomain);
 							userRealmLoginRespList.Add(bufferGetUserRealm);
 							conversationCount++;
 							progress.Report((double)conversationCount / totalConversationCount);
 						}
 					}
-					Console.WriteLine($"[+] Tenant Domains:");
-					ConsoleTable.From<UserRealmLoginRespPretty>(userRealmLoginRespList.Select(x => (UserRealmLoginRespPretty)x)).Configure(o => o.NumberAlignment = Alignment.Right).Write(Format.Alternative);
 
+					Console.WriteLine($"\n[+] Tenant Domains:");
+					ConsoleTable.From<UserRealmLoginRespPretty>(userRealmLoginRespList.Select(x => (UserRealmLoginRespPretty)x))
+						.Configure(o => o.NumberAlignment = Alignment.Right)
+						.Write(Format.Alternative);
 				}
 				catch (Exception ex)
 				{
-
 					Console.WriteLine("[!] Failed to complete tenant enumeration");
 				}
 			}
