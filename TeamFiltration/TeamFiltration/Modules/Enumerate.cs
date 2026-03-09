@@ -404,27 +404,33 @@ namespace TeamFiltration.Modules
 					//  Console.WriteLine($"Tenant Name: {}");
 					Console.WriteLine($"[+] Tenant Id: {openIdConfig.authorization_endpoint.Split("/")[3]}");
 					Console.WriteLine($"[+] Tenant region: {openIdConfig.tenant_region_scope}");
-					Envelope outlookAutoDiscover = await msolHandler.GetOutlookAutodiscover(domain);
-					var tenantDomains = outlookAutoDiscover.Body.GetFederationInformationResponseMessage.Response.Domains;
-					Console.WriteLine($"[+] Enumerating {tenantDomains.Count()} Tenant Domains:");
+
+					// ACS lookup: query by domain and tenant ID, union results
+					var tenantId = openIdConfig.authorization_endpoint?.Split('/')?[3];
+					var acsFromDomain = await msolHandler.GetAcsDomains(domain);
+					var acsFromTenantId = !string.IsNullOrEmpty(tenantId)
+						? await msolHandler.GetAcsDomains(tenantId)
+						: new List<string>();
+					var tenantDomains = acsFromDomain.Union(acsFromTenantId).Distinct()
+						.Where(d => !d.EndsWith(".onmicrosoft.com") && !d.EndsWith(".windows.net"))
+						.OrderBy(d => d)
+						.ToList();
+
+					Console.WriteLine($"[+] Enumerating {tenantDomains.Count} Tenant Domains:");
 
 					List<UserRealmLoginResp> userRealmLoginRespList = new List<UserRealmLoginResp>();
 
-					//Setup the progressBar
 					int conversationCount = 0;
-					int totalConversationCount = tenantDomains.Count();
+					int totalConversationCount = tenantDomains.Count;
 					using (var progress = new ProgressBar())
 					{
-						foreach (var tenantDomain in outlookAutoDiscover.Body.GetFederationInformationResponseMessage.Response.Domains)
+						foreach (var tenantDomain in tenantDomains)
 						{
 							UserRealmLoginResp bufferGetUserRealm = await msolHandler.GetUserRealm("randomuser@" + tenantDomain);
 							userRealmLoginRespList.Add(bufferGetUserRealm);
 							conversationCount++;
 							progress.Report((double)conversationCount / totalConversationCount);
-
 						}
-
-
 					}
 					Console.WriteLine($"[+] Tenant Domains:");
 					ConsoleTable.From<UserRealmLoginRespPretty>(userRealmLoginRespList.Select(x => (UserRealmLoginRespPretty)x)).Configure(o => o.NumberAlignment = Alignment.Right).Write(Format.Alternative);

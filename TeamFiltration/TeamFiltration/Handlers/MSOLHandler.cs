@@ -84,6 +84,62 @@ namespace TeamFiltration.Handlers
 
         }
 
+        /// <summary>
+        /// Retrieves tenant domains from the ACS (Access Control Service) metadata endpoint.
+        /// Works with either a domain name or a tenant GUID as the identifier.
+        /// Replaces the broken Outlook Autodiscover method for domain enumeration.
+        /// </summary>
+        public async Task<List<string>> GetAcsDomains(string identifier)
+        {
+            var url = $"https://accounts.accesscontrol.windows.net/{identifier}/metadata/json/1";
+
+            var proxy = new WebProxy
+            {
+                Address = new Uri(_globalProperties.TeamFiltrationConfig.proxyEndpoint),
+                BypassProxyOnLocal = false,
+                UseDefaultCredentials = false,
+            };
+
+            var httpClientHandler = new HttpClientHandler
+            {
+                Proxy = proxy,
+                ServerCertificateCustomValidationCallback = (message, xcert, chain, errors) => true,
+                SslProtocols = SslProtocols.None,
+                UseProxy = _debugMode,
+            };
+
+            var httpClient = new HttpClient(httpClientHandler);
+            httpClient.DefaultRequestHeaders.Add("User-Agent", _globalProperties.TeamFiltrationConfig.UserAgent);
+
+            var httpResp = await httpClient.GetAsync(url);
+            if (!httpResp.IsSuccessStatusCode)
+                return new List<string>();
+
+            var json = await httpResp.Content.ReadAsStringAsync();
+            var acsResp = JsonConvert.DeserializeObject<AcsMetadataResp>(json);
+            if (acsResp?.AllowedAudiences == null)
+                return new List<string>();
+
+            var domains = new List<string>();
+            foreach (var audience in acsResp.AllowedAudiences)
+            {
+                var atIndex = audience.IndexOf('@');
+                if (atIndex < 0) continue;
+
+                var domain = audience.Substring(atIndex + 1).ToLowerInvariant();
+
+                // Skip GUIDs (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx) and entries without a dot
+                if (!domain.Contains('.')) continue;
+                if (System.Text.RegularExpressions.Regex.IsMatch(domain,
+                    @"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase)) continue;
+
+                domains.Add(domain);
+            }
+
+            return domains.Distinct().OrderBy(x => x).ToList();
+        }
+
         public async Task<Envelope> GetOutlookAutodiscover(string domain)
         {
 

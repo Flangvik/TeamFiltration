@@ -38,100 +38,83 @@ namespace TeamFiltration.Handlers
         {
             try
             {
-                // Get tenant information using autodiscover
                 var msolHandler = new MSOLHandler(_globalArgsHandler, "ENUM", null);
-                var outlookAutoDiscover = await msolHandler.GetOutlookAutodiscover(_baseDomain);
 
-                var tenantList = new List<string>();
-                var mailList = new List<string>();
-                var oneDriveList = new List<string>();
+                // Step 1: get tenant ID from OpenID config (used as a second ACS lookup key)
+                var openIdConfig = await msolHandler.GetOpenIdConfig(_baseDomain);
+                var tenantId = openIdConfig?.authorization_endpoint?.Split('/')?[3];
 
-                if (outlookAutoDiscover?.Body?.GetFederationInformationResponseMessage?.Response?.Domains != null)
+                // Step 2: query ACS with both the domain and the tenant GUID, union results
+                var acsDomainsFromDomain = await msolHandler.GetAcsDomains(_baseDomain);
+                var acsDomainsFromTenantId = !string.IsNullOrEmpty(tenantId)
+                    ? await msolHandler.GetAcsDomains(tenantId)
+                    : new List<string>();
+
+                var allDomains = acsDomainsFromDomain
+                    .Union(acsDomainsFromTenantId)
+                    .Distinct()
+                    .ToList();
+
+                // Step 3: find .onmicrosoft.com candidates (excluding .mail.onmicrosoft.com)
+                var tenantList = allDomains
+                    .Where(d => d.EndsWith(".onmicrosoft.com") && !d.Contains(".mail.onmicrosoft.com"))
+                    .Select(d => d.Replace(".onmicrosoft.com", ""))
+                    .ToList();
+
+                var mailList = allDomains
+                    .Where(d => d.EndsWith(".mail.onmicrosoft.com"))
+                    .Select(d => d.Replace(".mail.onmicrosoft.com", ""))
+                    .ToList();
+
+                if (tenantList.Count == 0)
                 {
-                    // Extract tenant names
-                    foreach (var domain in outlookAutoDiscover.Body.GetFederationInformationResponseMessage.Response.Domains)
+                    _databaseHandler.WriteLog(new Log("ENUM", "Failed to find tenant name(s) via ACS metadata! Exiting."));
+                    return;
+                }
+
+                _databaseHandler.WriteLog(new Log("ENUM", $"Found {tenantList.Count} possible tenant(s) via ACS:"));
+                foreach (var tenant in tenantList)
+                    _databaseHandler.WriteLog(new Log("ENUM", tenant));
+
+                // Step 4: DNS-probe each candidate to confirm OneDrive/SharePoint resolves
+                var oneDriveList = new List<string>();
+                foreach (var tenant in tenantList)
+                {
+                    var testHostname = $"{tenant}-my.sharepoint.com";
+                    try
                     {
-                        if (domain.Contains(".onmicrosoft.com") && !domain.Contains(".mail.onmicrosoft.com"))
+                        var hostEntry = await System.Net.Dns.GetHostEntryAsync(testHostname);
+                        if (hostEntry != null)
                         {
-                            var cleanedTenant = domain.Replace(".onmicrosoft.com", "").ToLower();
-                            tenantList.Add(cleanedTenant);
-                        }
-                        else if (domain.Contains(".mail.onmicrosoft.com"))
-                        {
-                            var cleanedMail = domain.Replace(".mail.onmicrosoft.com", "").ToLower();
-                            mailList.Add(cleanedMail);
+                            oneDriveList.Add(tenant);
+                            _databaseHandler.WriteLog(new Log("ENUM", $"{testHostname} resolves — candidate confirmed"));
                         }
                     }
-
-                    if (tenantList.Count > 0)
+                    catch
                     {
-                        _databaseHandler.WriteLog(new Log("ENUM", $"Found {tenantList.Count()} possible tenants:"));
-        
-                        foreach (var tenant in tenantList)
-                        {
-                            _databaseHandler.WriteLog(new Log("ENUM", tenant));
-                        }
-     
-                    }
-                    else
-                    {
-                        _databaseHandler.WriteLog(new Log("ENUM", "Failed to find tenant name(s) using Outlook Autodiscovery! Exiting."));
-                        return;
-                    }
-
-                    // Check OneDrive availability for each tenant
-                    foreach (var tenant in tenantList)
-                    {
-                        var testHostname = $"{tenant}-my.sharepoint.com";
-                        try
-                        {
-                            var hostEntry = await System.Net.Dns.GetHostEntryAsync(testHostname);
-                            if (hostEntry != null)
-                            {
-                                oneDriveList.Add(tenant);
-                                _databaseHandler.WriteLog(new Log("ENUM", $"Tenant URL {tenant}-my.sharepoint.com seems to resolve"));
-                            }
-                        }
-                        catch
-                        {
-                            // DNS resolution failed, skip
-                            continue;
-                        }
-                    }
-
-                    if (oneDriveList.Count > 0)
-                    {
-                    
-                        foreach (var oneDriveHost in oneDriveList)
-                        {
-                            
-                        }
-              
-
-                        // Determine the primary tenant
-                        if (oneDriveList.Count == 1)
-                        {
-                            this._tenantName = oneDriveList[0];
-                        }
-                        else
-                        {
-                            // Find matching mail record
-                            var matchingMail = oneDriveList.Intersect(mailList).FirstOrDefault();
-                            if (!string.IsNullOrEmpty(matchingMail))
-                            {
-                             
-                                this._tenantName = matchingMail;
-                            }
-                            else
-                            {
-                          
-                                this._tenantName = oneDriveList[0];
-                            }
-                            _databaseHandler.WriteLog(new Log("ENUM", $"Sharepoint URL {this._tenantName}-my.sharepoint.com will be used for validation attempts"));
-                            _databaseHandler.WriteLog(new Log("ENUM", "If you do not get results, re-run and manually choose a different tenant"));
-                        }
+                        // DNS resolution failed for this candidate, skip
                     }
                 }
+
+                if (oneDriveList.Count == 0)
+                {
+                    _databaseHandler.WriteLog(new Log("ENUM", "No OneDrive-my SharePoint hostnames resolved. Cannot continue."));
+                    return;
+                }
+
+                // Step 5: pick winner — prefer the one that matches the mail subdomain
+                if (oneDriveList.Count == 1)
+                {
+                    this._tenantName = oneDriveList[0];
+                }
+                else
+                {
+                    var matchingMail = oneDriveList.Intersect(mailList).FirstOrDefault();
+                    this._tenantName = !string.IsNullOrEmpty(matchingMail) ? matchingMail : oneDriveList[0];
+                    _databaseHandler.WriteLog(new Log("ENUM", "If you do not get results, re-run and manually choose a different tenant"));
+                }
+
+                _databaseHandler.WriteLog(new Log("ENUM", $"Using {this._tenantName}-my.sharepoint.com for validation"));
             }
             catch (Exception ex)
             {

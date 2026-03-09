@@ -3,10 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace TeamFiltration.Models.MSOL
 {
-
+    public class AcsMetadataResp
+    {
+        [JsonProperty("allowedAudiences")]
+        public string[] AllowedAudiences { get; set; }
+    }
 
     public class GetOpenIdConfigResp
     {
