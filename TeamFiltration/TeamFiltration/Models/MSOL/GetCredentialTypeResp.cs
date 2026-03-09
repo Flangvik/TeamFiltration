@@ -36,6 +36,7 @@ namespace TeamFiltration.Models.MSOL
     {
         public GetCredentialUsertenantbranding[] UserTenantBranding { get; set; }
         public int DomainType { get; set; }
+        public bool DesktopSsoEnabled { get; set; }
     }
 
     public class GetCredentialUsertenantbranding

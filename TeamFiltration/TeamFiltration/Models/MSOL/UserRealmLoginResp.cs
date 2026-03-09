@@ -13,6 +13,7 @@ namespace TeamFiltration.Models.MSOL
         public string DomainName { get; set; }
         public string FederationBrandName { get; set; }
         public string CloudInstanceName { get; set; }
+        public string AuthURL { get; set; }
 
         public static explicit operator UserRealmLoginRespPretty(UserRealmLoginResp v)
         {
@@ -21,7 +22,8 @@ namespace TeamFiltration.Models.MSOL
                 DomainName = v.DomainName,
                 CloudInstanceName = v.CloudInstanceName,
                 FederationBrandName = v.FederationBrandName,
-                NameSpaceType = v.NameSpaceType
+                NameSpaceType = v.NameSpaceType,
+                AuthURL = v.AuthURL
             };
         }
     }
@@ -36,6 +38,7 @@ namespace TeamFiltration.Models.MSOL
         public string FederationBrandName { get; set; }
         public string CloudInstanceName { get; set; }
         public string CloudInstanceIssuerUri { get; set; }
+        public string AuthURL { get; set; }
     }
 
 }

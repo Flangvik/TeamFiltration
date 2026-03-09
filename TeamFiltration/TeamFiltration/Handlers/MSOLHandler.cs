@@ -140,6 +140,63 @@ namespace TeamFiltration.Handlers
             return domains.Distinct().OrderBy(x => x).ToList();
         }
 
+        /// <summary>
+        /// Calls the GetCredentialType endpoint with a dummy user at the given domain and returns
+        /// the full response. Useful for extracting tenant-level properties such as DesktopSsoEnabled.
+        /// </summary>
+        public async Task<GetCredentialTypeResp> GetTenantCredentialType(string domain)
+        {
+            string url = "https://login.microsoftonline.com/common/GetCredentialType?mkt=en-US";
+
+            var proxy = new WebProxy
+            {
+                Address = new Uri(_globalProperties.TeamFiltrationConfig.proxyEndpoint),
+                BypassProxyOnLocal = false,
+                UseDefaultCredentials = false
+            };
+
+            var httpClientHandler = new HttpClientHandler
+            {
+                Proxy = proxy,
+                ServerCertificateCustomValidationCallback = (message, xcert, chain, errors) => true,
+                SslProtocols = SslProtocols.None,
+                UseProxy = _debugMode
+            };
+
+            using (var clientHttp = new HttpClient(httpClientHandler))
+            {
+                var body = new GetCredentialType()
+                {
+                    username = $"randomuser@{domain}",
+                    isOtherIdpSupported = true,
+                    checkPhones = false,
+                    isRemoteNGCSupported = true,
+                    isCookieBannerShown = false,
+                    isFidoSupported = true,
+                    originalRequest = "",
+                    country = "US",
+                    forceotclogin = false,
+                    isExternalFederationDisallowed = false,
+                    isRemoteConnectSupported = false,
+                    federationFlags = 0,
+                    isSignup = false,
+                    flowToken = "",
+                    isAccessPassSupported = true
+                };
+
+                var postResp = await clientHttp.PostAsync(url,
+                    new StringContent(JsonConvert.SerializeObject(body), Encoding.UTF8, "application/json"));
+
+                if (postResp.IsSuccessStatusCode)
+                {
+                    var json = await postResp.Content.ReadAsStringAsync();
+                    return JsonConvert.DeserializeObject<GetCredentialTypeResp>(json);
+                }
+            }
+
+            return null;
+        }
+
         public async Task<Envelope> GetOutlookAutodiscover(string domain)
         {
 
